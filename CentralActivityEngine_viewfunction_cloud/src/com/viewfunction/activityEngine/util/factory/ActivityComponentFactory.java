@@ -195,6 +195,13 @@ public class ActivityComponentFactory {
 			BUILDIN_ADMINISTRATOR_ACCOUNT = PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT);
 			BUILDIN__ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
 			
+			//Wait 2 second to let OAK sesssion sync data
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
 			activityCS=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN__ADMINISTRATOR_ACCOUNT_PWD, activitySpaceName);
 			RootContentObject activityContentStoreRoot=ContentComponentFactory.createRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ContentStore);
 			activityCS.addRootContentObject(activityContentStoreRoot);
