@@ -1,0 +1,44 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="CentralActivityEngine_viewfunction full test suite">
+  <test verbose="2" name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivityEngineFactoryTestCase">
+    <classes>
+      <class name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivityEngineFactoryTestCase"/>
+    </classes>
+  </test>
+  
+  <test verbose="2" name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivitySpaceTestCase">
+    <classes>
+      <class name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivitySpaceTestCase"/>
+    </classes>
+  </test>
+  
+  <test verbose="2" name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivitySecurityTestCase">
+    <classes>
+      <class name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivitySecurityTestCase"/>
+    </classes>
+  </test>
+  
+  <test verbose="2" name="com.viewfunction.activityEngine.testNGTest.TestNG_BusinessActivityTestCase">
+    <classes>
+      <class name="com.viewfunction.activityEngine.testNGTest.TestNG_BusinessActivityTestCase"/>
+    </classes>
+  </test>
+  
+  <test verbose="2" name="com.viewfunction.activityEngine.testNGTest.TestNG_RosterTestCase">
+    <classes>
+      <class name="com.viewfunction.activityEngine.testNGTest.TestNG_RosterTestCase"/>
+    </classes>
+  </test> 
+  
+   <test verbose="2" name="com.viewfunction.activityEngine.testNGTest.TestNG_RoleQueueTestCase">
+    <classes>
+      <class name="com.viewfunction.activityEngine.testNGTest.TestNG_RoleQueueTestCase"/>
+    </classes>
+  </test>
+  
+   <test verbose="2" name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivityStep_ParticipantTaskTestCase">
+    <classes>
+      <class name="com.viewfunction.activityEngine.testNGTest.TestNG_ActivityStep_ParticipantTaskTestCase"/>
+    </classes>
+  </test>                
+</suite>
