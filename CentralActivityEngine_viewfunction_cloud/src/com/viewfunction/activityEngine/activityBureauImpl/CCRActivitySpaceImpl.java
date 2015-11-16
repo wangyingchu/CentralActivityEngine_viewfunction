@@ -715,10 +715,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 						role.removeParticipant(participantName);				
 					}					
 				}				
-				Role newRole=null;
-				for(String roleName:roles){					
-					newRole=this.getRole(roleName);
-					newRole.addParticipant(participantName);					
+				if(roles!=null){
+					Role newRole=null;
+					for(String roleName:roles){					
+						newRole=this.getRole(roleName);
+						newRole.addParticipant(participantName);					
+					}
 				}
 				return newParticipant;				
 			}			
