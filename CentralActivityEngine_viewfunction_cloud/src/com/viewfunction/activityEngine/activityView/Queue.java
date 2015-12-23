@@ -11,6 +11,9 @@ public interface Queue {
 	
 	public boolean setExposedDataFields(DataFieldDefinition[] exposedDataFields) throws ActivityEngineDataException, ActivityEngineRuntimeException, ActivityEngineActivityException;	
 	public DataFieldDefinition[] getExposedDataFields() throws ActivityEngineRuntimeException, ActivityEngineActivityException;	
+	public boolean addExposedDataField(DataFieldDefinition exposedDataField) throws ActivityEngineDataException, ActivityEngineRuntimeException, ActivityEngineActivityException;
+	public boolean removeExposedDataField(String dataFieldName) throws ActivityEngineDataException, ActivityEngineRuntimeException, ActivityEngineActivityException;
+	public boolean updateExposedDataField(DataFieldDefinition exposedDataField) throws ActivityEngineDataException, ActivityEngineRuntimeException, ActivityEngineActivityException;
 	
 	//Gets the name of the activity space in which this role is defined. 
     public String getActivitySpaceName();

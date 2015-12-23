@@ -388,4 +388,230 @@ public class CCR_CPRRosterImpl implements Roster,Serializable{
 			BUILDIN_ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);			
 		}		
 	}
+
+	@Override
+	public boolean addExposedDataField(DataFieldDefinition df) throws ActivityEngineDataException, ActivityEngineRuntimeException, ActivityEngineActivityException {
+		if(df==null){
+			throw new ActivityEngineDataException();
+		}
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}
+		ContentSpace metaDataContentSpace = null;	
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject rosterDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Roster);				
+			BaseContentObject targetRosterObj=rosterDefineObj.getSubContentObject(this.rosterName);
+			if(targetRosterObj==null){				
+				throw new ActivityEngineActivityException();				
+			}else{
+				BaseContentObject rosterExposedDataFieldsContainerObj=targetRosterObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_RosterDefinition_dataFields);
+				if(rosterExposedDataFieldsContainerObj==null){
+					rosterExposedDataFieldsContainerObj=targetRosterObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_RosterDefinition_dataFields, null, false);
+				}
+				BaseContentObject existingDatafield=rosterExposedDataFieldsContainerObj.getSubContentObject(df.getFieldName());
+				if(existingDatafield!=null){
+					throw new ActivityEngineDataException();
+				}
+				
+				List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();						
+				ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+				fieldTypeProperty.setMultiple(false);
+				fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+				fieldTypeProperty.setPropertyType(PropertyType.LONG);
+				fieldTypeProperty.setPropertyValue(new Long(df.getFieldType()));	
+				paramLst.add(fieldTypeProperty);
+					
+				ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+				displayProperty.setMultiple(false);
+				displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+				displayProperty.setPropertyType(PropertyType.STRING);
+				displayProperty.setPropertyValue(df.getDisplayName());	
+				paramLst.add(displayProperty);
+					
+				ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+				descriptionProperty.setMultiple(false);
+				descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+				descriptionProperty.setPropertyType(PropertyType.STRING);
+				descriptionProperty.setPropertyValue(df.getDescription());	
+				paramLst.add(descriptionProperty);
+					
+				ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+				isArrayFieldProperty.setMultiple(false);
+				isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+				isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+				isArrayFieldProperty.setPropertyValue(df.isArrayField());	
+				paramLst.add(isArrayFieldProperty);
+					
+				ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+				isSystemFieldProperty.setMultiple(false);
+				isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+				isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+				isSystemFieldProperty.setPropertyValue(df.isSystemField());	
+				paramLst.add(isSystemFieldProperty);
+					
+				ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+				isMandatoryFieldProperty.setMultiple(false);
+				isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+				isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+				isMandatoryFieldProperty.setPropertyValue(df.isMandatoryField());	
+				paramLst.add(isMandatoryFieldProperty);					
+				rosterExposedDataFieldsContainerObj.addSubContentObject(df.getFieldName(), paramLst, false);
+			}			
+		} catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();			
+		}		
+		return true;
+	}
+
+	@Override
+	public boolean removeExposedDataField(String dataFieldName) throws ActivityEngineDataException, ActivityEngineRuntimeException, ActivityEngineActivityException {
+		if(dataFieldName==null){
+			throw new ActivityEngineDataException();
+		}
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}
+		ContentSpace metaDataContentSpace = null;	
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject rosterDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Roster);				
+			BaseContentObject targetRosterObj=rosterDefineObj.getSubContentObject(this.rosterName);
+			if(targetRosterObj==null){				
+				throw new ActivityEngineActivityException();				
+			}else{
+				BaseContentObject rosterExposedDataFieldsContainerObj=targetRosterObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_RosterDefinition_dataFields);
+				if(rosterExposedDataFieldsContainerObj==null){
+					return false;
+				}
+				BaseContentObject existingDatafield=rosterExposedDataFieldsContainerObj.getSubContentObject(dataFieldName);
+				if(existingDatafield==null){
+					return false;
+				}else{
+					return rosterExposedDataFieldsContainerObj.removeSubContentObject(dataFieldName, false);
+				}
+			}			
+		} catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();			
+		}		
+	}
+
+	@Override
+	public boolean updateExposedDataField(DataFieldDefinition exposedDataField) throws ActivityEngineDataException, ActivityEngineRuntimeException, ActivityEngineActivityException {
+		String dataFieldName=exposedDataField.getFieldName();
+		if(dataFieldName==null){
+			throw new ActivityEngineDataException();
+		}
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject rosterDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Roster);				
+			BaseContentObject targetRosterObj=rosterDefineObj.getSubContentObject(this.rosterName);
+			if(targetRosterObj==null){				
+				throw new ActivityEngineActivityException();				
+			}else{
+				BaseContentObject rosterExposedDataFieldsContainerObj=targetRosterObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_RosterDefinition_dataFields);
+				if(rosterExposedDataFieldsContainerObj==null){
+					return false;
+				}
+				BaseContentObject existingDatafield=rosterExposedDataFieldsContainerObj.getSubContentObject(dataFieldName);
+				if(existingDatafield==null){
+					throw new ActivityEngineRuntimeException();	
+				}else{
+					ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+					fieldTypeProperty.setMultiple(false);
+					fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+					fieldTypeProperty.setPropertyType(PropertyType.LONG);
+					fieldTypeProperty.setPropertyValue(new Long(exposedDataField.getFieldType()));	
+					existingDatafield.updateProperty(fieldTypeProperty, false);
+						
+					ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+					displayProperty.setMultiple(false);
+					displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+					displayProperty.setPropertyType(PropertyType.STRING);
+					displayProperty.setPropertyValue(exposedDataField.getDisplayName());	
+					existingDatafield.updateProperty(displayProperty, false);
+						
+					ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+					descriptionProperty.setMultiple(false);
+					descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+					descriptionProperty.setPropertyType(PropertyType.STRING);
+					descriptionProperty.setPropertyValue(exposedDataField.getDescription());	
+					existingDatafield.updateProperty(descriptionProperty, false);
+						
+					ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+					isArrayFieldProperty.setMultiple(false);
+					isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+					isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+					isArrayFieldProperty.setPropertyValue(exposedDataField.isArrayField());	
+					existingDatafield.updateProperty(isArrayFieldProperty, false);
+						
+					ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+					isSystemFieldProperty.setMultiple(false);
+					isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+					isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+					isSystemFieldProperty.setPropertyValue(exposedDataField.isSystemField());	
+					existingDatafield.updateProperty(isSystemFieldProperty, false);
+						
+					ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+					isMandatoryFieldProperty.setMultiple(false);
+					isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+					isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+					isMandatoryFieldProperty.setPropertyValue(exposedDataField.isMandatoryField());	
+					existingDatafield.updateProperty(isMandatoryFieldProperty, false);
+					return true;
+				}
+			}			
+		} catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();			
+		}
+	}
 }

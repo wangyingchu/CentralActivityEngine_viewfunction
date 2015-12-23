@@ -113,7 +113,7 @@ public class ActivityComponentFactory {
 	
 	public static ActivitySpace createActivitySpace(String activitySpaceName) throws ActivityEngineException{
 		String BUILDIN_ADMINISTRATOR_ACCOUNT;
-		String BUILDIN__ADMINISTRATOR_ACCOUNT_PWD;
+		String BUILDIN_ADMINISTRATOR_ACCOUNT_PWD;
 		ContentSpace metaDataContentSpace = null;
 		ContentSpace activityCS=null;
 		try {					
@@ -140,16 +140,16 @@ public class ActivityComponentFactory {
 			}
 			
 			BUILDIN_ADMINISTRATOR_ACCOUNT = PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT);
-			BUILDIN__ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
+			BUILDIN_ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
 			
-			activityCS=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN__ADMINISTRATOR_ACCOUNT_PWD, activitySpaceName);
+			activityCS=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, activitySpaceName);
 			RootContentObject activityContentStoreRoot=ContentComponentFactory.createRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ContentStore);
 			activityCS.addRootContentObject(activityContentStoreRoot);
 			activityContentStoreRoot.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_SpaceContentStore, null, false);			
 			activityContentStoreRoot.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_RoleContentStore, null, false);
 			activityContentStoreRoot.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ParticipantContentStore, null, false);			
 			
-			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN__ADMINISTRATOR_ACCOUNT_PWD, 
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
 					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);				
 			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
 			if(activitySpaceDefineObject==null){
@@ -183,7 +183,7 @@ public class ActivityComponentFactory {
 	
 	public static ActivitySpace createInitActivitySpace(String activitySpaceName) throws ActivityEngineException{
 		String BUILDIN_ADMINISTRATOR_ACCOUNT;
-		String BUILDIN__ADMINISTRATOR_ACCOUNT_PWD;
+		String BUILDIN_ADMINISTRATOR_ACCOUNT_PWD;
 		ContentSpace metaDataContentSpace = null;
 		ContentSpace activityCS=null;
 		try {			
@@ -193,7 +193,7 @@ public class ActivityComponentFactory {
 				return null;
 			}				
 			BUILDIN_ADMINISTRATOR_ACCOUNT = PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT);
-			BUILDIN__ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
+			BUILDIN_ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
 			
 			//Wait 2 second to let OAK sesssion sync data
 			try {
@@ -202,14 +202,14 @@ public class ActivityComponentFactory {
 				e.printStackTrace();
 			}
 			
-			activityCS=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN__ADMINISTRATOR_ACCOUNT_PWD, activitySpaceName);
+			activityCS=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, activitySpaceName);
 			RootContentObject activityContentStoreRoot=ContentComponentFactory.createRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ContentStore);
 			activityCS.addRootContentObject(activityContentStoreRoot);
 			activityContentStoreRoot.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_SpaceContentStore, null, false);			
 			activityContentStoreRoot.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_RoleContentStore, null, false);
 			activityContentStoreRoot.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ParticipantContentStore, null, false);			
 			
-			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN__ADMINISTRATOR_ACCOUNT_PWD, 
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
 					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);				
 			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
 			if(activitySpaceDefineObject==null){
@@ -249,12 +249,12 @@ public class ActivityComponentFactory {
 	
 	public static ActivitySpace[] getActivitySpaces() throws ActivityEngineException{
 		String BUILDIN_ADMINISTRATOR_ACCOUNT;
-		String BUILDIN__ADMINISTRATOR_ACCOUNT_PWD;
+		String BUILDIN_ADMINISTRATOR_ACCOUNT_PWD;
 		ContentSpace metaDataContentSpace = null;
 		try {					
 			BUILDIN_ADMINISTRATOR_ACCOUNT = PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT);
-			BUILDIN__ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
-			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN__ADMINISTRATOR_ACCOUNT_PWD, 
+			BUILDIN_ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
 					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);			
 			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
 			if(activitySpaceDefineObject==null){
@@ -287,12 +287,12 @@ public class ActivityComponentFactory {
 	
 	public static CustomStructure getCustomStructure(String activitySpaceName,String structureId) throws ActivityEngineException{
 		String BUILDIN_ADMINISTRATOR_ACCOUNT;
-		String BUILDIN__ADMINISTRATOR_ACCOUNT_PWD;
+		String BUILDIN_ADMINISTRATOR_ACCOUNT_PWD;
 		ContentSpace targetContentSpace = null;
 		try {					
 			BUILDIN_ADMINISTRATOR_ACCOUNT = PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT);
-			BUILDIN__ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
-			targetContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN__ADMINISTRATOR_ACCOUNT_PWD,CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);			
+			BUILDIN_ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
+			targetContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);			
 			BaseContentObject storageContentObject=targetContentSpace.getContentObjectByAbsPath(structureId);
 			
 			BaseContentObject parentContentObject=storageContentObject.getParentContentObject();			

@@ -109,7 +109,7 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	}
 
 	@Override
-	public boolean addActivityDataFields(DataFieldDefinition dataField) {		
+	public boolean addActivityDataField(DataFieldDefinition dataField) {		
 		String dataName=dataField.getFieldName();
 		if(containedDataFieldDefineMap.containsKey(dataName)){
 			return false;
@@ -118,9 +118,21 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 			return true;
 		}
 	}
+	
+	@Override
+	public boolean updateActivityDataField(DataFieldDefinition dataField) {		
+		String dataName=dataField.getFieldName();
+		if(containedDataFieldDefineMap.containsKey(dataName)){
+			containedDataFieldDefineMap.remove(dataName);
+			containedDataFieldDefineMap.put(dataName, dataField);
+			return true;
+		}else{
+			return false;
+		}
+	}
 
 	@Override
-	public boolean removeActivityDataFields(String dataFieldName) {
+	public boolean removeActivityDataField(String dataFieldName) {
 		if(!containedDataFieldDefineMap.containsKey(dataFieldName)){
 			return false;
 		}else{

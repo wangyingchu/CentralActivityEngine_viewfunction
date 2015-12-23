@@ -24,9 +24,11 @@ public interface BusinessActivityDefinition {
 	public DataFieldDefinition[] getActivityDataFields();
 	public boolean setActivityDataFields(DataFieldDefinition[] contentedDataFields);
 	public boolean resetActivityDataFields(DataFieldDefinition[] contentedDataFields);
-	public boolean addActivityDataFields(DataFieldDefinition dataField);
-	public boolean removeActivityDataFields(String dataFieldName);
+	public boolean addActivityDataField(DataFieldDefinition dataField);
+	public boolean updateActivityDataField(DataFieldDefinition dataField);
+	public boolean removeActivityDataField(String dataFieldName);
 	public boolean containsActivityDataField(String dataFieldName);
+
 	//Define exposed DataFields
 	public boolean setActivityStepExposedDataFields(String stepName,DataFieldDefinition[] exposedDataFields) throws ActivityEngineDataException;	
 	public boolean addActivityStepExposedDataField(String stepName,DataFieldDefinition exposedDataField) throws ActivityEngineDataException;

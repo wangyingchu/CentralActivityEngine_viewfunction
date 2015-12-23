@@ -8,6 +8,7 @@ import com.viewfunction.activityEngine.activityView.Roster;
 import com.viewfunction.activityEngine.activityView.RoleQueue;
 import com.viewfunction.activityEngine.activityView.common.ActivityData;
 import com.viewfunction.activityEngine.activityView.common.ActivityStep;
+import com.viewfunction.activityEngine.activityView.common.DataFieldDefinition;
 import com.viewfunction.activityEngine.exception.ActivityEngineActivityException;
 import com.viewfunction.activityEngine.exception.ActivityEngineDataException;
 import com.viewfunction.activityEngine.exception.ActivityEngineProcessException;
@@ -64,8 +65,12 @@ public interface ActivitySpace {
 	public boolean enableBusinessActivityDefinition(String activityType) throws ActivityEngineRuntimeException, ActivityEngineActivityException;
 	public BusinessActivityDefinition[] getBusinessActivityDefinitions() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;
 	public BusinessActivityDefinition getBusinessActivityDefinition(String activityType) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;	
-	public String[] getBusinessActivityTypes() throws ActivityEngineRuntimeException;	
-
+	public String[] getBusinessActivityTypes() throws ActivityEngineRuntimeException;
+	
+	public boolean addBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;
+	public boolean updateBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;;
+	public boolean removeBusinessActivityDefinitionDataFieldDefinition(String activityType,String dataFieldName) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;
+	
 	public BusinessActivity launchBusinessActivity(String activityType,ActivityData[] initActivityData,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;		
 	public BusinessActivity launchBusinessActivity(String activityType,ActivityData[] initActivityData,Map<String,Object> processVariables,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;	
 	public List<BusinessActivity> getBusinessActivitiesByStartUserId(String startUserId,int activityStatus) throws ProcessRepositoryRuntimeException;	
