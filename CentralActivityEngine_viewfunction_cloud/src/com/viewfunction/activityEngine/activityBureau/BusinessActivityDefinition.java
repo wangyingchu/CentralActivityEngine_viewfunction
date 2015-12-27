@@ -2,7 +2,9 @@ package com.viewfunction.activityEngine.activityBureau;
 
 import java.util.Map;
 
+import com.viewfunction.activityEngine.activityView.common.ActivityStepDefinition;
 import com.viewfunction.activityEngine.activityView.common.DataFieldDefinition;
+import com.viewfunction.activityEngine.exception.ActivityEngineActivityException;
 import com.viewfunction.activityEngine.exception.ActivityEngineDataException;
 import com.viewfunction.activityEngine.exception.ActivityEngineProcessException;
 import com.viewfunction.activityEngine.exception.ActivityEngineRuntimeException;
@@ -51,6 +53,7 @@ public interface BusinessActivityDefinition {
 	public boolean containsExposedActivityStep(String stepName);	
 	public void setExposedSteps(String[] steps);
 	public String[] getExposedSteps();	
+	public ActivityStepDefinition[] getDefinedSteps() throws ActivityEngineActivityException, ActivityEngineRuntimeException;
 	
 	public Map<String,String> getActivityStepRoleMap();		
 	public boolean setActivityStepRelatedRole(String stepDefineKey,String roleName) throws ActivityEngineProcessException;

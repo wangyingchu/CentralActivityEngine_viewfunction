@@ -3,17 +3,27 @@ package com.viewfunction.activityEngine.activityBureauImpl;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.viewfunction.activityEngine.activityBureau.ActivitySpace;
 import com.viewfunction.activityEngine.activityBureau.BusinessActivityDefinition;
+import com.viewfunction.activityEngine.activityView.common.ActivityStepDefinition;
 import com.viewfunction.activityEngine.activityView.common.DataFieldDefinition;
+import com.viewfunction.activityEngine.exception.ActivityEngineActivityException;
 import com.viewfunction.activityEngine.exception.ActivityEngineDataException;
 import com.viewfunction.activityEngine.exception.ActivityEngineProcessException;
 import com.viewfunction.activityEngine.exception.ActivityEngineRuntimeException;
 import com.viewfunction.activityEngine.security.Role;
 import com.viewfunction.activityEngine.util.factory.ActivityComponentFactory;
+import com.viewfunction.contentRepository.util.exception.ContentReposityRuntimeException;
+import com.viewfunction.processRepository.exception.ProcessRepositoryDeploymentException;
+import com.viewfunction.processRepository.exception.ProcessRepositoryRuntimeException;
+import com.viewfunction.processRepository.processBureau.ProcessObject;
+import com.viewfunction.processRepository.processBureau.ProcessSpace;
+import com.viewfunction.processRepository.processBureau.ProcessStepDefinition;
+import com.viewfunction.processRepository.util.factory.ProcessComponentFactory;
 
 public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefinition,Serializable{	
 	private static final long serialVersionUID = 4253617946152726919L;
@@ -600,5 +610,31 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 		}else{
 			return false;
 		}	
+	}
+
+	@Override
+	public ActivityStepDefinition[] getDefinedSteps() throws ActivityEngineActivityException, ActivityEngineRuntimeException {
+		if(this.activitySpaceName==null||this.activityType==null){
+			throw new ActivityEngineRuntimeException();
+		}
+		try {
+		 	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+		 	List<ProcessStepDefinition> processStepDefinList=targetProcessSpace.getProcessStepsInfoByDefinitionName(this.activityType);
+		 	if(processStepDefinList!=null){
+		 		ActivityStepDefinition[] stepDefinitionArray=new ActivityStepDefinition[processStepDefinList.size()];
+		 			for(int i=0;i<processStepDefinList.size();i++){
+		 				ActivityStepDefinition currentStepDefinition=new ActivityStepDefinition();
+	            		currentStepDefinition.setStepId(processStepDefinList.get(i).getStepId());
+	            		currentStepDefinition.setStepName(processStepDefinList.get(i).getStepName());
+	            		currentStepDefinition.setStepDescription(processStepDefinList.get(i).getStepDescription());
+	            		stepDefinitionArray[i]=currentStepDefinition;
+	            	}
+	            	return stepDefinitionArray;
+	            }
+	        } catch (ProcessRepositoryRuntimeException e) {
+	            e.printStackTrace();
+	            throw new ActivityEngineActivityException();
+	        }
+		return null;
 	}
 }

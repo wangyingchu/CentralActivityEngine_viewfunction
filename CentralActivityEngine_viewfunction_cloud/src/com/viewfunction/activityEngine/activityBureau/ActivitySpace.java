@@ -8,6 +8,7 @@ import com.viewfunction.activityEngine.activityView.Roster;
 import com.viewfunction.activityEngine.activityView.RoleQueue;
 import com.viewfunction.activityEngine.activityView.common.ActivityData;
 import com.viewfunction.activityEngine.activityView.common.ActivityStep;
+import com.viewfunction.activityEngine.activityView.common.ActivityStepDefinition;
 import com.viewfunction.activityEngine.activityView.common.DataFieldDefinition;
 import com.viewfunction.activityEngine.exception.ActivityEngineActivityException;
 import com.viewfunction.activityEngine.exception.ActivityEngineDataException;
@@ -70,6 +71,10 @@ public interface ActivitySpace {
 	public boolean addBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;
 	public boolean updateBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;;
 	public boolean removeBusinessActivityDefinitionDataFieldDefinition(String activityType,String dataFieldName) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;
+	public boolean addBusinessActivityDefinitionExposedStep(String activityType,String stepName,String relatedRoleName) throws ActivityEngineRuntimeException,ActivityEngineActivityException;
+	public boolean removeBusinessActivityDefinitionExposedStep(String activityType,String stepName) throws ActivityEngineRuntimeException,ActivityEngineActivityException;
+	public boolean setBusinessActivityDefinitionExposedStepDataFieldDefinitions(String activityType,String stepName,DataFieldDefinition[] dataFieldDefinitions) throws ActivityEngineRuntimeException,ActivityEngineActivityException;
+	public boolean setBusinessActivityDefinitionExposedStepInfo(String activityType,ActivityStepDefinition activityStepDefinition)throws ActivityEngineRuntimeException,ActivityEngineActivityException;
 	
 	public BusinessActivity launchBusinessActivity(String activityType,ActivityData[] initActivityData,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;		
 	public BusinessActivity launchBusinessActivity(String activityType,ActivityData[] initActivityData,Map<String,Object> processVariables,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;	
