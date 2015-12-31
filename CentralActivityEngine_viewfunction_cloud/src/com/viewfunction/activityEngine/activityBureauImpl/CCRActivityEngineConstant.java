@@ -10,6 +10,7 @@ public interface CCRActivityEngineConstant {
 	String ACTIVITYSPACE_RoleQueue="ACTIVITYSPACE_RoleQueue";
 	String ACTIVITYSPACE_ProcessQueue="ACTIVITYSPACE_ProcessQueue";
 	String ACTIVITYSPACE_ActivityDefinition="ACTIVITYSPACE_ActivityDefinition";	
+	String ACTIVITYSPACE_ActivityCategories="ACTIVITYSPACE_ActivityCategories";
 	//ActivityDefinition property Define
 	String ACTIVITYSPACE_ActivityDefinition_dataFields="ActivityDefinition_dataFields";
 	String ACTIVITYSPACE_ActivityDefinition_isEnabled="ActivityDefinition_isEnabled";	

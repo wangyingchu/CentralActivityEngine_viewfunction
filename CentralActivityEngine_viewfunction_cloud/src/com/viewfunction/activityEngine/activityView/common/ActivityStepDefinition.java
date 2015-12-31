@@ -7,7 +7,8 @@ public class ActivityStepDefinition {
 	private String stepRole;
 	private String stepUserIdentityAttribute;
 	private String[] stepProcessVariables;
-	
+	private String stepDecisionPointAttribute; 
+	private String[] stepDecisionPointChooseOptions;
 	public String getStepName() {
 		return stepName;
 	}
@@ -43,5 +44,17 @@ public class ActivityStepDefinition {
 	}
 	public void setStepProcessVariables(String[] stepProcessVariables) {
 		this.stepProcessVariables = stepProcessVariables;
+	}
+	public String getStepDecisionPointAttribute() {
+		return stepDecisionPointAttribute;
+	}
+	public void setStepDecisionPointAttribute(String stepDecisionPointAttribute) {
+		this.stepDecisionPointAttribute = stepDecisionPointAttribute;
+	}
+	public String[] getStepDecisionPointChooseOptions() {
+		return stepDecisionPointChooseOptions;
+	}
+	public void setStepDecisionPointChooseOptions(String[] stepDecisionPointChooseOptions) {
+		this.stepDecisionPointChooseOptions = stepDecisionPointChooseOptions;
 	}
 }

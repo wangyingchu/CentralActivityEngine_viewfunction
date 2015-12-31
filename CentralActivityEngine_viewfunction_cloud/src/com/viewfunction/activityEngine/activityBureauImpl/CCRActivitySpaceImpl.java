@@ -3174,7 +3174,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	}
 
 	@Override
-	public boolean setBusinessActivityDefinitionExposedStepInfo(String activityType,ActivityStepDefinition activityStepDefinition) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+	public boolean setBusinessActivityDefinitionExposedStepProcessProperties(String activityType,ActivityStepDefinition activityStepDefinition) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
 		String stepName=activityStepDefinition.getStepId();
 		try {
 	        initContentRepositoryParameter();
@@ -3251,6 +3251,503 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	        	}
 	        	return true;
 	        }
+	    } catch (ContentReposityException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }finally{
+	        metaDataContentSpace.closeContentSpace();
+	    }
+	}
+	
+	@Override
+	public boolean setBusinessActivityDefinitionExposedStepDecisionPointProperties(String activityType,ActivityStepDefinition activityStepDefinition) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+		String stepName=activityStepDefinition.getStepId();
+		try {
+	        initContentRepositoryParameter();
+	    } catch (ContentReposityRuntimeException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }
+	    ContentSpace metaDataContentSpace = null;
+	    try {
+	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+	        if(activitySpaceDefineObject==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+	        if(activitySpaceBco==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+	        if(targetActivityDefineObj==null){
+	            throw new ActivityEngineActivityException();
+	        }else{
+	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+	        	if(stepsObj==null){
+	        		throw new ActivityEngineActivityException();
+	        	}
+	        	BaseContentObject stepDefinObj=stepsObj.getSubContentObject(stepName);
+	        	if(stepDefinObj==null){
+	        		throw new ActivityEngineRuntimeException();
+	        	}
+	        	
+	        	String stepDecisionPointAttribute=activityStepDefinition.getStepDecisionPointAttribute();
+	        	ContentObjectProperty stepDecisionPointAttributeProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName);
+	        	if(stepDecisionPointAttribute!=null){
+	        		if(stepDecisionPointAttributeProperty!=null){
+	        			stepDecisionPointAttributeProperty.setPropertyValue(stepDecisionPointAttribute);
+	        			stepDefinObj.updateProperty(stepDecisionPointAttributeProperty, false);
+	        		}else{
+	        			stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName, stepDecisionPointAttribute, false);
+	        		}
+	        	}else{
+	        		if(stepDecisionPointAttributeProperty!=null){
+	        			stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName, false);
+	        		}
+	        	}
+	        	
+	        	String[] stepDecisionPointChoiseList=activityStepDefinition.getStepDecisionPointChooseOptions();
+	        	ContentObjectProperty stepDecisionPointChoiseListProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList);
+	        	if(stepDecisionPointChoiseList!=null){
+	        		if(stepDecisionPointChoiseListProperty!=null){
+	        			stepDecisionPointChoiseListProperty.setPropertyValue(stepDecisionPointChoiseList);
+	        			stepDefinObj.updateProperty(stepDecisionPointChoiseListProperty, false);
+	        		}else{
+	        			stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList, stepDecisionPointChoiseList, false);
+	        		}
+	        	}else{
+	        		if(stepDecisionPointChoiseListProperty!=null){
+	        			stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList, false);
+	        		}
+	        	}
+	        	return true;
+	        }
+	    } catch (ContentReposityException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }finally{
+	        metaDataContentSpace.closeContentSpace();
+	    }
+	}
+
+	@Override
+	public boolean updateBusinessActivityDefinitionProperties(BusinessActivityDefinition bd)throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
+		try {
+	        initContentRepositoryParameter();
+	    } catch (ContentReposityRuntimeException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }
+	    ContentSpace metaDataContentSpace = null;
+	    try {
+	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+	        if(activitySpaceDefineObject==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+	        if(activitySpaceBco==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+	        if(activityDefineObj==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+	        BaseContentObject activityTypeDefineObj=activityDefineObj.getSubContentObject(bd.getActivityType());
+	        if(activityTypeDefineObj==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+	        String rosterName=bd.getRosterName();
+	        BusinessActivityDefinition currentBusinessActivity=this.getBusinessActivityDefinition(bd.getActivityType());
+        	String currentRosterName=currentBusinessActivity.getRosterName();
+        	if(currentRosterName!=null){
+        		Roster currentRoster=this.getRoster(rosterName);
+        		currentRoster.removeActivityType(bd.getActivityType());
+        	}
+	        if(rosterName!=null){
+	        	Roster newRoster=this.getRoster(rosterName);
+	        	newRoster.addActivityType(bd.getActivityType());
+	        }
+	        
+	        boolean isActive=bd.isEnabled();
+	        ContentObjectProperty activityDefineStatusProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
+	        activityDefineStatusProperty.setPropertyValue(isActive);
+	        activityTypeDefineObj.updateProperty(activityDefineStatusProperty, false);
+	        
+	        String launchUserIdAttr=bd.getLaunchUserIdentityAttributeName();
+	        ContentObjectProperty launchUserIdentityAttributeNameProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName);
+	        if(launchUserIdAttr!=null){
+	        	if(launchUserIdentityAttributeNameProperty!=null){
+	        		launchUserIdentityAttributeNameProperty.setPropertyValue(launchUserIdAttr);
+	        		activityTypeDefineObj.updateProperty(launchUserIdentityAttributeNameProperty,false);
+	        	}else{
+	        		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName, launchUserIdAttr, false);
+	        	}
+	        }else{
+	        	if(launchUserIdentityAttributeNameProperty!=null){
+	        		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName, false);
+	        	}
+	        }
+	        	
+	        String[] launchRoles=bd.getActivityLaunchRoles();
+	        ContentObjectProperty launchRoleListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles);
+            if(launchRoles!=null){
+            	if(launchRoleListProperty!=null){
+            		launchRoleListProperty.setPropertyValue(launchRoles);
+            		activityTypeDefineObj.updateProperty(launchRoleListProperty, false);
+            	}else{
+            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles, launchRoles, false);
+            	}
+            }else{
+            	if(launchRoleListProperty!=null){
+            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles, false);
+            	}
+            }
+            
+            String[] launchParticipants=bd.getActivityLaunchParticipants();
+            ContentObjectProperty launchParticipantListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants);
+            if(launchParticipants!=null){
+            	if(launchParticipantListProperty!=null){
+            		launchParticipantListProperty.setPropertyValue(launchParticipants);
+            		activityTypeDefineObj.updateProperty(launchParticipantListProperty, false);
+            	}else{
+            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants, launchParticipants, false);
+            	}
+            }else{
+            	if(launchParticipantListProperty!=null){
+            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants, false);
+            	}
+            }
+
+            String[] launchProcessVariables=bd.getLaunchProcessVariableList();
+            ContentObjectProperty launchProcessVariableListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList);
+            if(launchProcessVariables!=null){
+            	if(launchProcessVariableListProperty!=null){
+            		launchProcessVariableListProperty.setPropertyValue(launchProcessVariables);
+            		activityTypeDefineObj.updateProperty(launchProcessVariableListProperty, false);
+            	}else{
+            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList, launchProcessVariables, false);
+            	}
+            }else{
+            	if(launchProcessVariableListProperty!=null){
+            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList, false);
+            	}
+            }
+
+            String launchDecisionPointAttr=bd.getLaunchDecisionPointAttributeName();
+            ContentObjectProperty launchDecisionPointAttributeNameProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName);
+            if(launchDecisionPointAttr!=null){
+        	   if(launchDecisionPointAttributeNameProperty!=null){
+        		   launchDecisionPointAttributeNameProperty.setPropertyValue(launchDecisionPointAttr);
+        		   activityTypeDefineObj.updateProperty(launchDecisionPointAttributeNameProperty, false);
+        	   }else{
+        		   activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName, launchDecisionPointAttr,false);
+        	   }
+            }else{
+            	if(launchDecisionPointAttributeNameProperty!=null){
+            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName, false);
+            	}
+            }
+
+            String[] launchDecisionPointOptions=bd.getLaunchDecisionPointChoiseList();
+            ContentObjectProperty launchDecisionPointChoiseListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList);
+            if(launchDecisionPointOptions!=null){
+            	if(launchDecisionPointChoiseListProperty!=null){
+            		launchDecisionPointChoiseListProperty.setPropertyValue(launchDecisionPointOptions);
+            		activityTypeDefineObj.updateProperty(launchDecisionPointChoiseListProperty, false);
+            	}else{
+            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList, launchDecisionPointOptions,false);
+            	}
+            }else{
+            	if(launchDecisionPointChoiseListProperty!=null){
+            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList, false);
+            	}
+            }
+            
+            String activityTypeDesc=bd.getActivityDescription();
+            ContentObjectProperty activityDescriptionProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description);
+            if(activityTypeDesc!=null){
+        	   if(activityDescriptionProperty!=null){
+        		   activityDescriptionProperty.setPropertyValue(activityTypeDesc);
+        		   activityTypeDefineObj.updateProperty(activityDescriptionProperty, false);
+        	   }else{
+        		   activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description, activityTypeDesc, false);
+        	   }
+        	}else{
+        		if(activityDescriptionProperty!=null){
+        			activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description, false);
+        		}
+        	}
+            
+            String[] activityTypeCategories=bd.getActivityCategories();
+            ContentObjectProperty activityCategoriesProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories);
+            if(activityTypeCategories!=null){
+            	if(activityCategoriesProperty!=null){
+            		activityCategoriesProperty.setPropertyValue(activityTypeCategories);
+            		activityTypeDefineObj.updateProperty(activityCategoriesProperty, false);
+            	}else{
+            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories, activityTypeCategories,false);
+            	}
+            }else{
+            	if(activityCategoriesProperty!=null){
+            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories, false);
+            	}
+            }
+            
+            BaseContentObject launchPointMetaInfoObj=activityTypeDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPoint);
+            if(launchPointMetaInfoObj==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+            BaseContentObject launchPointExposedDataFieldsObj=launchPointMetaInfoObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields);
+            if(launchPointExposedDataFieldsObj==null){
+	        	throw new ActivityEngineActivityException();
+	        }
+            
+            DataFieldDefinition[] launchPointExposedDataFields=bd.getLaunchPointExposedDataFields();
+            launchPointMetaInfoObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields, false);
+            launchPointExposedDataFieldsObj=launchPointMetaInfoObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields, null, false);
+            if(launchPointExposedDataFields!=null){
+                for(DataFieldDefinition df:launchPointExposedDataFields){
+                    List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
+                    ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+                    fieldTypeProperty.setMultiple(false);
+                    fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+                    fieldTypeProperty.setPropertyType(PropertyType.LONG);
+                    fieldTypeProperty.setPropertyValue(new Long(df.getFieldType()));
+                    paramLst.add(fieldTypeProperty);
+
+                    ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+                    displayProperty.setMultiple(false);
+                    displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+                    displayProperty.setPropertyType(PropertyType.STRING);
+                    displayProperty.setPropertyValue(df.getDisplayName());
+                    paramLst.add(displayProperty);
+
+                    ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+                    descriptionProperty.setMultiple(false);
+                    descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+                    descriptionProperty.setPropertyType(PropertyType.STRING);
+                    descriptionProperty.setPropertyValue(df.getDescription());
+                    paramLst.add(descriptionProperty);
+
+                    ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isArrayFieldProperty.setMultiple(false);
+                    isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+                    isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isArrayFieldProperty.setPropertyValue(df.isArrayField());
+                    paramLst.add(isArrayFieldProperty);
+
+                    ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isSystemFieldProperty.setMultiple(false);
+                    isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+                    isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isSystemFieldProperty.setPropertyValue(df.isSystemField());
+                    paramLst.add(isSystemFieldProperty);
+
+                    ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isMandatoryFieldProperty.setMultiple(false);
+                    isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+                    isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isMandatoryFieldProperty.setPropertyValue(df.isMandatoryField());
+                    paramLst.add(isMandatoryFieldProperty);
+
+                    ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isReadableFieldProperty.setMultiple(false);
+                    isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
+                    isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isReadableFieldProperty.setPropertyValue(df.isReadableField());
+                    paramLst.add(isReadableFieldProperty);
+
+                    ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isWriteableFieldProperty.setMultiple(false);
+                    isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
+                    isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isWriteableFieldProperty.setPropertyValue(df.isWriteableField());
+                    paramLst.add(isWriteableFieldProperty);
+
+                    launchPointExposedDataFieldsObj.addSubContentObject(df.getFieldName(), paramLst, false);
+                }
+            }
+            return true;
+	    } catch (ContentReposityException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }finally{
+	        metaDataContentSpace.closeContentSpace();
+	    }
+	}
+
+	@Override
+	public String[] getActivityTypeCategories()throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+		try {
+	        initContentRepositoryParameter();
+	    } catch (ContentReposityRuntimeException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }
+	    ContentSpace metaDataContentSpace = null;
+	    try {
+	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+	        if(activitySpaceDefineObject==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+	        if(activitySpaceBco==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+	        if(activitySpaceBusinessCategoriesProperty==null){
+	        	return null;
+	        }else{
+	        	return (String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
+	        }
+	    } catch (ContentReposityException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }finally{
+	        metaDataContentSpace.closeContentSpace();
+	    }
+	}
+
+	@Override
+	public boolean setActivityTypeCategories(String[] categories)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+		try {
+	        initContentRepositoryParameter();
+	    } catch (ContentReposityRuntimeException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }
+		if(categories==null){
+			throw new ActivityEngineRuntimeException();
+		}
+	    ContentSpace metaDataContentSpace = null;
+	    try {
+	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+	        if(activitySpaceDefineObject==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+	        if(activitySpaceBco==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+	        if(activitySpaceBusinessCategoriesProperty!=null){
+	        	activitySpaceBusinessCategoriesProperty.setPropertyValue(categories);
+	        	activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
+	        }else{
+	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, categories, false);
+	        }
+	        return true;
+	    } catch (ContentReposityException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }finally{
+	        metaDataContentSpace.closeContentSpace();
+	    }
+	}
+
+	@Override
+	public boolean addActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+		try {
+	        initContentRepositoryParameter();
+	    } catch (ContentReposityRuntimeException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }
+		if(categoryName==null){
+			throw new ActivityEngineRuntimeException();
+		}
+	    ContentSpace metaDataContentSpace = null;
+	    try {
+	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+	        if(activitySpaceDefineObject==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+	        if(activitySpaceBco==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+	        if(activitySpaceBusinessCategoriesProperty!=null){
+	        	String[] currentCategories=(String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
+	        	String[] newCategories=new String[currentCategories.length+1];
+	        	for(int i=0;i<currentCategories.length;i++){
+	        		String currentCategory=currentCategories[i];
+	        		if(currentCategory.equals(categoryName)){
+	        			return false;
+	        		}else{
+	        			newCategories[i]=currentCategories[i];
+	        		}
+	        	}
+	        	newCategories[newCategories.length-1]=categoryName;
+	        	activitySpaceBusinessCategoriesProperty.setPropertyValue(newCategories);
+	        	activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
+	        }else{
+	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, new String[]{categoryName}, false);
+	        }
+	        return true;
+	    } catch (ContentReposityException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }finally{
+	        metaDataContentSpace.closeContentSpace();
+	    }
+	}
+
+	@Override
+	public boolean removeActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+		try {
+	        initContentRepositoryParameter();
+	    } catch (ContentReposityRuntimeException e) {
+	        e.printStackTrace();
+	        throw new ActivityEngineRuntimeException();
+	    }
+		if(categoryName==null){
+			throw new ActivityEngineRuntimeException();
+		}
+	    ContentSpace metaDataContentSpace = null;
+	    try {
+	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+	        if(activitySpaceDefineObject==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+	        if(activitySpaceBco==null){
+	            throw new ActivityEngineRuntimeException();
+	        }
+	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+	        if(activitySpaceBusinessCategoriesProperty!=null){
+	        	String[] currentCategories=(String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
+	        	List<String> newCateoriesList=new ArrayList<String>();
+	        	for(int i=0;i<currentCategories.length;i++){
+	        		String currentCategory=currentCategories[i];
+	        		if(!currentCategory.equals(categoryName)){
+	        			newCateoriesList.add(categoryName);
+	        		}
+	        	}
+	        	if(newCateoriesList.size()==currentCategories.length){
+	        		throw new ActivityEngineRuntimeException();
+	        	}
+	        	String[] newCategories=new String[newCateoriesList.size()];
+	        	newCateoriesList.toArray(newCategories);
+	        	activitySpaceBusinessCategoriesProperty.setPropertyValue(newCategories);
+	        	activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
+	        }else{
+	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, new String[]{categoryName}, false);
+	        }
+	        return true;
 	    } catch (ContentReposityException e) {
 	        e.printStackTrace();
 	        throw new ActivityEngineRuntimeException();
