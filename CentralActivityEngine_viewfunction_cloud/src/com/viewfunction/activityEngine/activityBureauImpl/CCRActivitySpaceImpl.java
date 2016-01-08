@@ -3506,10 +3506,9 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(launchPointExposedDataFieldsObj==null){
 	        	throw new ActivityEngineActivityException();
 	        }
-            
-            DataFieldDefinition[] launchPointExposedDataFields=bd.getLaunchPointExposedDataFields();
             launchPointMetaInfoObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields, false);
             launchPointExposedDataFieldsObj=launchPointMetaInfoObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields, null, false);
+            DataFieldDefinition[] launchPointExposedDataFields=bd.getLaunchPointExposedDataFields();
             if(launchPointExposedDataFields!=null){
                 for(DataFieldDefinition df:launchPointExposedDataFields){
                     List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
