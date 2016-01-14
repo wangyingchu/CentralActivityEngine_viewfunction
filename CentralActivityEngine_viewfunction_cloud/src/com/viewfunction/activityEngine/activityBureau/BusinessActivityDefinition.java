@@ -1,5 +1,6 @@
 package com.viewfunction.activityEngine.activityBureau;
 
+import java.io.InputStream;
 import java.util.Map;
 
 import com.viewfunction.activityEngine.activityView.common.ActivityStepDefinition;
@@ -65,6 +66,7 @@ public interface BusinessActivityDefinition {
 	public String getRosterName();
 	public boolean isDefinitionResourceUpdated();
 	public void setDefinitionResourceUpdated(boolean updateFlag);
+	public InputStream getDefinitionFlowDiagram()throws ActivityEngineRuntimeException;;
 	
 	//Define Process operation data
 	public String getLaunchDecisionPointAttributeName();

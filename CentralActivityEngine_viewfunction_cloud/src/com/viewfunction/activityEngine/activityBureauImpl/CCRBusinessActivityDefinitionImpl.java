@@ -1,5 +1,6 @@
 package com.viewfunction.activityEngine.activityBureauImpl;
 
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -632,6 +633,20 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	            e.printStackTrace();
 	            throw new ActivityEngineActivityException();
 	        }
+		return null;
+	}
+
+	@Override
+	public InputStream getDefinitionFlowDiagram()throws ActivityEngineRuntimeException {
+		if(this.activitySpaceName==null||this.activityType==null){
+			throw new ActivityEngineRuntimeException();
+		}
+		try {
+		 	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+		 	return targetProcessSpace.getProcessDefinitionFlowDiagram(this.activityType);
+		} catch (ProcessRepositoryRuntimeException e) {
+			e.printStackTrace();
+	    }
 		return null;
 	}
 }
