@@ -46,7 +46,6 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	private String launchUserIdentityAttributeName;
 	private HashMap<String,String> stepUserIdentityAttributeNameMap;
 	private boolean definitionResourceUpdated=false;
-	
 	private HashMap<String,DataFieldDefinition> launchPointDataFieldDefineMap;
 	private HashMap<String,String> activityLaunchRolesMap;
 	private HashMap<String,String> activityLaunchParticipantsMap;
@@ -428,7 +427,7 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 			throw new ActivityEngineDataException();
 		}	
 	}
-
+	
 	@Override
 	public boolean isDefinitionResourceUpdated() {		
 		return this.definitionResourceUpdated;
@@ -438,7 +437,7 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	public void setDefinitionResourceUpdated(boolean updateFlag) {
 		this.definitionResourceUpdated=updateFlag;		
 	}	
-	
+
 	@Override
 	public boolean setLaunchPointExposedDataFields(DataFieldDefinition[] exposedDataFields) throws ActivityEngineDataException {			
 		for(DataFieldDefinition cedf:exposedDataFields){					
@@ -637,7 +636,7 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	}
 
 	@Override
-	public InputStream getDefinitionFlowDiagram()throws ActivityEngineRuntimeException {
+	public InputStream getDefinitionFlowDiagram() throws ActivityEngineRuntimeException {
 		if(this.activitySpaceName==null||this.activityType==null){
 			throw new ActivityEngineRuntimeException();
 		}
@@ -646,7 +645,21 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 		 	return targetProcessSpace.getProcessDefinitionFlowDiagram(this.activityType);
 		} catch (ProcessRepositoryRuntimeException e) {
 			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
 	    }
+	}
+	
+	@Override
+	public InputStream getDefinitionFlowXML() throws ActivityEngineRuntimeException {		
+		if(this.activitySpaceName!=null&&this.activityType!=null){
+			try {
+			 	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+			 	return targetProcessSpace.getProcessDefinitionFile(this.activityType);
+			} catch (ProcessRepositoryRuntimeException e) {
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+		    }
+		}
 		return null;
 	}
 }

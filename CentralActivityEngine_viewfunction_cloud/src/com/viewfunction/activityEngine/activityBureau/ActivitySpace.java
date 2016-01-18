@@ -1,5 +1,6 @@
 package com.viewfunction.activityEngine.activityBureau;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -62,6 +63,8 @@ public interface ActivitySpace {
 	/* business activity management */
 	public boolean addBusinessActivityDefinition(BusinessActivityDefinition bd) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException, ActivityEngineProcessException;
 	public boolean updateBusinessActivityDefinition(BusinessActivityDefinition bd) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException, ActivityEngineProcessException;
+	public boolean refreshBusinessActivityDefinitionWorkflow(String activityType,File workflowDefinitionFile)throws ActivityEngineRuntimeException,ActivityEngineActivityException, ActivityEngineProcessException,ActivityEngineDataException;
+	
 	public boolean disableBusinessActivityDefinition(String activityType) throws ActivityEngineRuntimeException, ActivityEngineActivityException;
 	public boolean enableBusinessActivityDefinition(String activityType) throws ActivityEngineRuntimeException, ActivityEngineActivityException;
 	public BusinessActivityDefinition[] getBusinessActivityDefinitions() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;

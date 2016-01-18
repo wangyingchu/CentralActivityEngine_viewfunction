@@ -1,6 +1,7 @@
 package com.viewfunction.activityEngine.activityBureauImpl;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -1211,6 +1212,85 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         }
     }
 
+    @Override
+	public boolean refreshBusinessActivityDefinitionWorkflow(String activityType, File workflowDefinitionFile)throws ActivityEngineRuntimeException,ActivityEngineActivityException,ActivityEngineProcessException,ActivityEngineDataException {
+    	try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+    	ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            if(activityDefineObj.getSubContentObject(activityType)==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activityObj=activityDefineObj.getSubContentObject(activityType);
+            if(activityObj==null){
+                throw new ActivityEngineActivityException();
+            }else{
+            	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+            	boolean updateProcessResult=targetProcessSpace.updateProcessDefinition(activityType, new FileInputStream(workflowDefinitionFile));
+            	
+            	
+            	/*
+            	if(updateProcessResult){
+            		//update definition resource File
+            		activityObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource, false);
+            		BaseContentObject defineResourceObj=activityObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource, null, false);
+                    
+            		
+            		
+            		
+            		String businessActivityDefineFileName=activityType+".bpmn20.xml";
+                    //add process define xml file in content repository
+                    ContentOperationHelper coh=ContentComponentFactory.getContentOperationHelper();
+                    boolean addProcessDefineResult=coh.addTextContent(defineResourceObj, workflowDefinitionFile, businessActivityDefineFileName, true);
+                    if(!addProcessDefineResult){
+                        throw new ActivityEngineDataException();
+                    }
+                    
+                    
+                    
+                    
+                    
+                    
+                    return true;
+            	}else{
+            		return false;
+            	}
+            	*/
+            	
+            	return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        } catch (ProcessRepositoryRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		} catch (ProcessRepositoryDeploymentException e) {
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
+    
     @Override
     public boolean updateBusinessActivityDefinition(BusinessActivityDefinition bd) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException, ActivityEngineProcessException {
         try {

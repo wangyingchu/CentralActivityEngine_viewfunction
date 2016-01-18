@@ -63,10 +63,11 @@ public interface BusinessActivityDefinition {
 	//Define Process Define resource
 	public boolean setDefinitionResource(Object definitionResource);
 	public Object getDefinitionResource();
-	public String getRosterName();
 	public boolean isDefinitionResourceUpdated();
 	public void setDefinitionResourceUpdated(boolean updateFlag);
-	public InputStream getDefinitionFlowDiagram()throws ActivityEngineRuntimeException;;
+	public InputStream getDefinitionFlowDiagram()throws ActivityEngineRuntimeException;
+	public InputStream getDefinitionFlowXML()throws ActivityEngineRuntimeException;
+	public String getRosterName();
 	
 	//Define Process operation data
 	public String getLaunchDecisionPointAttributeName();
