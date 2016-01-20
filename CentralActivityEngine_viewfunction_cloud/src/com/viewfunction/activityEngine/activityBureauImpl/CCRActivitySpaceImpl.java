@@ -1213,14 +1213,14 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     }
 
     @Override
-	public boolean refreshBusinessActivityDefinitionWorkflow(String activityType, File workflowDefinitionFile)throws ActivityEngineRuntimeException,ActivityEngineActivityException,ActivityEngineProcessException,ActivityEngineDataException {
-    	try {
+    public boolean refreshBusinessActivityDefinitionWorkflow(String activityType, File workflowDefinitionFile)throws ActivityEngineRuntimeException,ActivityEngineActivityException,ActivityEngineProcessException,ActivityEngineDataException {
+        try {
             initContentRepositoryParameter();
         } catch (ContentReposityRuntimeException e) {
             e.printStackTrace();
             throw new ActivityEngineRuntimeException();
         }
-    	ContentSpace metaDataContentSpace = null;
+        ContentSpace metaDataContentSpace = null;
         try {
             metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
                     CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
@@ -1240,53 +1240,49 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(activityObj==null){
                 throw new ActivityEngineActivityException();
             }else{
-            	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
-            	boolean updateProcessResult=targetProcessSpace.updateProcessDefinition(activityType, new FileInputStream(workflowDefinitionFile));
-            	
-            	
-            	/*
-            	if(updateProcessResult){
-            		//update definition resource File
-            		activityObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource, false);
-            		BaseContentObject defineResourceObj=activityObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource, null, false);
-                    
-            		
-            		
-            		
-            		String businessActivityDefineFileName=activityType+".bpmn20.xml";
-                    //add process define xml file in content repository
-                    ContentOperationHelper coh=ContentComponentFactory.getContentOperationHelper();
-                    boolean addProcessDefineResult=coh.addTextContent(defineResourceObj, workflowDefinitionFile, businessActivityDefineFileName, true);
-                    if(!addProcessDefineResult){
-                        throw new ActivityEngineDataException();
+                ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+                boolean updateProcessResult=targetProcessSpace.updateProcessDefinition(activityType, new FileInputStream(workflowDefinitionFile));
+                if(updateProcessResult){
+                    //update definition resource File
+                    String businessActivityDefineFileName=activityType+".bpmn20.xml";
+                    BaseContentObject defineResourceObj=activityObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource);
+                    if(defineResourceObj!=null) {
+                        ContentOperationHelper coh = ContentComponentFactory.getContentOperationHelper();
+                        boolean updateProcessDefineResourceResult = coh.updateTextContent(defineResourceObj, businessActivityDefineFileName, workflowDefinitionFile, businessActivityDefineFileName, false);
+                        if (!updateProcessDefineResourceResult) {
+                            throw new ActivityEngineDataException();
+                        }
                     }
-                    
-                    
-                    
-                    
-                    
-                    
+                    ContentObjectProperty exposedStepsProperty=ContentComponentFactory.createContentObjectProperty();
+                    exposedStepsProperty.setMultiple(true);
+                    exposedStepsProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
+                    exposedStepsProperty.setPropertyType(PropertyType.STRING);
+                    exposedStepsProperty.setPropertyValue(new String[]{});
+                    activityObj.updateProperty(exposedStepsProperty,false);
+                    activityObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName,false);
+                    activityObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList,false);
+                    activityObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList,false);
+                    activityObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName,false);
+                    activityObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, false);
+                    activityObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, null, false);
                     return true;
-            	}else{
-            		return false;
-            	}
-            	*/
-            	
-            	return true;
+                }else{
+                    return false;
+                }
             }
         } catch (ContentReposityException e) {
             e.printStackTrace();
             throw new ActivityEngineRuntimeException();
         } catch (ProcessRepositoryRuntimeException e) {
-			e.printStackTrace();
-			throw new ActivityEngineProcessException();
-		} catch (ProcessRepositoryDeploymentException e) {
-			e.printStackTrace();
-			throw new ActivityEngineProcessException();
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new ActivityEngineRuntimeException();
-		}finally{
+            e.printStackTrace();
+            throw new ActivityEngineProcessException();
+        } catch (ProcessRepositoryDeploymentException e) {
+            e.printStackTrace();
+            throw new ActivityEngineProcessException();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
             metaDataContentSpace.closeContentSpace();
         }
     }
