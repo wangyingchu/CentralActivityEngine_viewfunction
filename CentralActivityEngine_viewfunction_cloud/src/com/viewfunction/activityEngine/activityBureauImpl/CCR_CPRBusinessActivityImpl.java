@@ -197,6 +197,49 @@ public class CCR_CPRBusinessActivityImpl implements BusinessActivity,Serializabl
 			activityContentSpace.closeContentSpace();			
 		}
 	}
+	
+	@Override
+	public ActivityData[] getActivityData(DataFieldDefinition[] dataFieldDefinitionArray) throws ActivityEngineRuntimeException, ActivityEngineDataException {	
+		if(dataFieldDefinitionArray==null){
+			return null;		
+		}
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}		
+		ContentSpace activityContentSpace = null;
+		try {
+			activityContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, this.activitySpaceName);
+			RootContentObject activityTypeRootObject=activityContentSpace.getRootContentObject(this.activityType);			
+			if(activityTypeRootObject==null){
+				throw new  ActivityEngineDataException();								
+			}
+			BaseContentObject activityInstanceObj=activityTypeRootObject.getSubContentObject(this.activityId);
+			if(activityInstanceObj==null){
+				throw new  ActivityEngineDataException();
+			}
+			BaseContentObject activityInstanceDataObject=activityInstanceObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_dataFields);
+			if(activityInstanceDataObject!=null){
+				ActivityData[] activityDataArray=new ActivityData[dataFieldDefinitionArray.length];	
+				for(int i=0;i<dataFieldDefinitionArray.length;i++){				
+					ContentObjectProperty contentObjectProperty=activityInstanceDataObject.getProperty(dataFieldDefinitionArray[i].getFieldName());					
+					ActivityData currentActivityData=ActivityComponentFactory.createActivityData(dataFieldDefinitionArray[i],
+							contentObjectProperty!=null?contentObjectProperty.getPropertyValue():null);
+					activityDataArray[i]=currentActivityData;				
+				}		
+				return activityDataArray;	
+			}else{
+				return null;
+			}							
+		}catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			activityContentSpace.closeContentSpace();			
+		}
+	}
 
 	@Override
 	public BusinessActivityDefinition getActivityDefinition() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {		
