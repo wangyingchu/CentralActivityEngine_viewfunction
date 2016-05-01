@@ -36,6 +36,8 @@ import com.viewfunction.activityEngine.exception.ActivityEngineRuntimeException;
 import com.viewfunction.activityEngine.extension.ActivityEventType;
 import com.viewfunction.activityEngine.extension.ActivitySpaceEventListenerInstance;
 import com.viewfunction.activityEngine.extension.SpaceEventListenersLoader;
+import com.viewfunction.activityEngine.helper.BatchOperationHelper;
+import com.viewfunction.activityEngine.helperImpl.CCR_CPRBatchOperationHelperImpl;
 import com.viewfunction.activityEngine.security.Participant;
 import com.viewfunction.activityEngine.security.Role;
 import com.viewfunction.activityEngine.securityImpl.CCR_CPRParticipantImpl;
@@ -471,5 +473,9 @@ public class ActivityComponentFactory {
 				}
 		}
 		return false;
+	}
+	
+	public static BatchOperationHelper getBatchOperationHelper(){
+		return new CCR_CPRBatchOperationHelperImpl();
 	}
 }
