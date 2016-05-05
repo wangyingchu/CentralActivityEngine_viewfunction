@@ -17,8 +17,14 @@ public abstract class ActivityStepCustomExtension extends ActivitiExtensionStepI
 	
 	@Override
 	public void executeExtensionLogic(StepContext stepContext){		
-		executeActivityStepExtensionLogic(this.activityStepContext);
+		try{
+			executeActivityStepExtensionLogic(this.activityStepContext);
+		}catch(Exception exception){
+			handelExtensionLogicError(this.activityStepContext,exception);
+		}
 	}
 	
 	protected abstract void executeActivityStepExtensionLogic(ActivityStepContext activityStepContext);
+	
+	protected void handelExtensionLogicError(ActivityStepContext activityStepContext,Exception exception){}
 }
