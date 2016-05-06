@@ -8,8 +8,14 @@ public abstract class ActivitySpaceEventListener extends ActivitiProcessSpaceEve
 	@Override
 	public void executeEventHandleLogic(ProcessSpaceEventContext processSpaceEventContext){
 		ActivitySpaceEventContext activitySpaceEventContext=new ActivitySpaceEventContext(processSpaceEventContext);
-		executeActivitySpaceEventHandleLogic(activitySpaceEventContext);
+		try{
+			executeActivitySpaceEventHandleLogic(activitySpaceEventContext);
+		}catch(Exception exception){
+			handelListenerLogicError(activitySpaceEventContext,exception);
+		}
 	}
 	
 	public abstract void executeActivitySpaceEventHandleLogic(ActivitySpaceEventContext activitySpaceEventContext);
+	
+	public abstract void handelListenerLogicError(ActivitySpaceEventContext activitySpaceEventContext,Exception exception);
 }

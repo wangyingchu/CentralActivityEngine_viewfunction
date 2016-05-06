@@ -10,7 +10,7 @@ public abstract class BusinessActivityMonitor extends ActivitiProcessMonitorImpl
 	private static final long serialVersionUID = -3886386705862531018L;
 	
 	private ActivityStepContext activityStepContext;
-
+	
 	@Override
 	public void notify(DelegateExecution delegateExecution) throws Exception {
 		this.activityStepContext=new ActivityStepContext(delegateExecution);
@@ -18,20 +18,36 @@ public abstract class BusinessActivityMonitor extends ActivitiProcessMonitorImpl
 	}
 	
 	public void executeGeneralMonitorLogic(StepContext stepContext){
-		executeBusinessActivityGeneralMonitorLogic(this.activityStepContext);
-	};
+		try{
+			executeBusinessActivityGeneralMonitorLogic(this.activityStepContext);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,BusinessActivityMonitorEventType.General,exception);
+		}
+	}
 	
 	public void executeProcessStartMonitorLogic(StepContext stepContext){
-		executeBusinessActivityStartMonitorLogic(this.activityStepContext);
-	};
+		try{
+			executeBusinessActivityStartMonitorLogic(this.activityStepContext);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,BusinessActivityMonitorEventType.Start,exception);
+		}
+	}
 	
 	public void executeProcessEndMonitorLogic(StepContext stepContext){
-		executeBusinessActivityEndMonitorLogic(this.activityStepContext);
-	};
+		try{
+			executeBusinessActivityEndMonitorLogic(this.activityStepContext);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,BusinessActivityMonitorEventType.End,exception);
+		}
+	}
 	
 	public void executeProcessTransitionMonitorLogic(StepContext stepContext){
-		executeBusinessActivityTransitionMonitorLogic(this.activityStepContext);
-	};
+		try{
+			executeBusinessActivityTransitionMonitorLogic(this.activityStepContext);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,BusinessActivityMonitorEventType.Transition,exception);
+		}
+	}
 	
 	public abstract void executeBusinessActivityGeneralMonitorLogic(ActivityStepContext activityStepContext);
 	
@@ -40,4 +56,6 @@ public abstract class BusinessActivityMonitor extends ActivitiProcessMonitorImpl
 	public abstract void executeBusinessActivityEndMonitorLogic(ActivityStepContext activityStepContext);
 	
 	public abstract void executeBusinessActivityTransitionMonitorLogic(ActivityStepContext activityStepContext);
+	
+	public abstract void handelMonitorLogicError(ActivityStepContext activityStepContext,BusinessActivityMonitorEventType eventType,Exception exception);
 }

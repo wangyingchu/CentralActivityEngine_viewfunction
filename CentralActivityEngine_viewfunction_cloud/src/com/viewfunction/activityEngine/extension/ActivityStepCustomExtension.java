@@ -26,5 +26,5 @@ public abstract class ActivityStepCustomExtension extends ActivitiExtensionStepI
 	
 	protected abstract void executeActivityStepExtensionLogic(ActivityStepContext activityStepContext);
 	
-	protected void handelExtensionLogicError(ActivityStepContext activityStepContext,Exception exception){}
+	protected abstract void handelExtensionLogicError(ActivityStepContext activityStepContext,Exception exception);
 }

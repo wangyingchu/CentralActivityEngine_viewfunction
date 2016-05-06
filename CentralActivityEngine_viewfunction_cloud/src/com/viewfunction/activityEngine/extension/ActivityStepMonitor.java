@@ -24,24 +24,44 @@ public abstract class ActivityStepMonitor extends ActivitiProcessStepMonitorImpl
 	}
 	
 	public void executeGeneralMonitorLogic(StepContext stepContext,StepRouteSettingHandler stepRouteSettingHandler){
-		executeActivityStepGeneralMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
-	};
+		try{
+			executeActivityStepGeneralMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,this.activityStepRouteSettingHandler,ActivityStepMonitorEventType.General,exception);
+		}
+	}
 	
 	public void executeStepAssignMonitorLogic(StepContext stepContext,StepRouteSettingHandler stepRouteSettingHandler){
-		executeActivityStepAssignMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
-	};
+		try{
+			executeActivityStepAssignMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,this.activityStepRouteSettingHandler,ActivityStepMonitorEventType.Assign,exception);
+		}
+	}
 	
 	public void executeStepCompleteMonitorLogic(StepContext stepContext,StepRouteSettingHandler stepRouteSettingHandler){
-		executeActivityStepCompleteMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
-	};
+		try{
+			executeActivityStepCompleteMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,this.activityStepRouteSettingHandler,ActivityStepMonitorEventType.Complete,exception);
+		}
+	}
 	
 	public void executeStepCreateMonitorLogic(StepContext stepContext,StepRouteSettingHandler stepRouteSettingHandler){
-		executeActivityStepCreateMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
-	};
+		try{
+			executeActivityStepCreateMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,this.activityStepRouteSettingHandler,ActivityStepMonitorEventType.Create,exception);
+		}
+	}
 	
 	public void executeStepDeleteMonitorLogic(StepContext stepContext,StepRouteSettingHandler stepRouteSettingHandler){
-		executeActivityStepDeleteMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
-	};
+		try{
+			executeActivityStepDeleteMonitorLogic(this.activityStepContext,this.activityStepRouteSettingHandler);
+		}catch(Exception exception){
+			handelMonitorLogicError(this.activityStepContext,this.activityStepRouteSettingHandler,ActivityStepMonitorEventType.Delete,exception);
+		}
+	}
 	
 	public abstract void executeActivityStepGeneralMonitorLogic(ActivityStepContext activityStepContext,ActivityStepRouteSettingHandler activityStepRouteSettingHandler);
 	
@@ -52,5 +72,7 @@ public abstract class ActivityStepMonitor extends ActivitiProcessStepMonitorImpl
 	public abstract void executeActivityStepCreateMonitorLogic(ActivityStepContext activityStepContext,ActivityStepRouteSettingHandler activityStepRouteSettingHandler);
 	
 	public abstract void executeActivityStepDeleteMonitorLogic(ActivityStepContext activityStepContext,ActivityStepRouteSettingHandler activityStepRouteSettingHandler);
+	
+	public abstract void handelMonitorLogicError(ActivityStepContext activityStepContext,ActivityStepRouteSettingHandler activityStepRouteSettingHandler,ActivityStepMonitorEventType eventType,Exception exception);
 
 }

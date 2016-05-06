@@ -57,7 +57,7 @@ public class CCR_CPRBatchOperationHelperImpl implements BatchOperationHelper{
 						BaseContentObject activityInstanceDataObject=activityInstanceObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_dataFields);
 						
 						DataFieldDefinition[] dataFieldDefinitionArray=targetActivityDefinition.getActivityStepsExposedDataField().get(activityStepName);
-						if(activityInstanceDataObject!=null){
+						if(activityInstanceDataObject!=null&&dataFieldDefinitionArray!=null){
 							ActivityData[] activityDataArray=new ActivityData[dataFieldDefinitionArray.length];	
 							for(int i=0;i<dataFieldDefinitionArray.length;i++){				
 								ContentObjectProperty contentObjectProperty=activityInstanceDataObject.getProperty(dataFieldDefinitionArray[i].getFieldName());					
