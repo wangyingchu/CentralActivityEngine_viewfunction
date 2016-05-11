@@ -102,4 +102,11 @@ public interface ActivitySpace {
 	public boolean setActivityTypeCategories(String[] categories)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
 	public boolean addActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
 	public boolean removeActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
+	
+	public String[] getActivitySpaceExtendFeatureCategories()throws ActivityEngineRuntimeException, ActivityEngineActivityException;
+	public boolean setActivitySpaceExtendFeatureCategories(String[] categories)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
+	public boolean addActivitySpaceExtendFeatureCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
+	public boolean removeActivitySpaceExtendFeatureCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
+	
+	
 }

@@ -11,6 +11,7 @@ public interface CCRActivityEngineConstant {
 	String ACTIVITYSPACE_ProcessQueue="ACTIVITYSPACE_ProcessQueue";
 	String ACTIVITYSPACE_ActivityDefinition="ACTIVITYSPACE_ActivityDefinition";	
 	String ACTIVITYSPACE_ActivityCategories="ACTIVITYSPACE_ActivityCategories";
+	String ACTIVITYSPACE_ExtendFeatureCategories="ACTIVITYSPACE_ExtendFeatureCategories";
 	//ActivityDefinition property Define
 	String ACTIVITYSPACE_ActivityDefinition_dataFields="ActivityDefinition_dataFields";
 	String ACTIVITYSPACE_ActivityDefinition_isEnabled="ActivityDefinition_isEnabled";	
