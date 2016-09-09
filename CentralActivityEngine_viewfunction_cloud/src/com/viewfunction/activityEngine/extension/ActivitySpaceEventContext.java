@@ -8,6 +8,7 @@ import com.viewfunction.activityEngine.activityBureau.BusinessActivity;
 import com.viewfunction.activityEngine.activityBureau.BusinessActivityDefinition;
 import com.viewfunction.activityEngine.activityBureauImpl.CCRActivityEngineConstant;
 import com.viewfunction.activityEngine.activityView.common.ActivityStep;
+import com.viewfunction.activityEngine.activityView.commonImpl.CCR_CPRActivityStepImpl;
 import com.viewfunction.activityEngine.exception.ActivityEngineActivityException;
 import com.viewfunction.activityEngine.exception.ActivityEngineDataException;
 import com.viewfunction.activityEngine.exception.ActivityEngineProcessException;
@@ -134,6 +135,12 @@ public class ActivitySpaceEventContext{
 							currentActivityStep=getActivitySpace().getFinishedActivityStepByStepInfo(this.processSpaceEventContext.getProcessType(), currentProcessObject.getProcessObjectId(), activityStepName);
 							break;
 					}
+					CCR_CPRActivityStepImpl activityStepImpl=(CCR_CPRActivityStepImpl)currentActivityStep;
+					activityStepImpl.setStepAssignee(historicProcessStep.getStepAssignee());
+					activityStepImpl.setStepDefinitionKey(historicProcessStep.getStepDefinitionKey());
+					activityStepImpl.setActivityStepName(activityStepName);
+					activityStepImpl.setStepCreateTime(historicProcessStep.getStartTime());
+					activityStepImpl.setBusinessActivity(getAttachedBusinessActivity());
 					activityStepList.add(currentActivityStep);
 				}
 				return activityStepList;
