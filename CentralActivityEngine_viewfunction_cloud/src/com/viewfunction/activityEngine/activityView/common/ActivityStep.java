@@ -36,13 +36,21 @@ public interface ActivityStep {
 	//Activity data
 	public ProcessStep getActivityProcessStep();
 	public ProcessObject getActivityProcessObject() throws ActivityEngineProcessException;	
-	
+	//Activity operations
 	public boolean handleActivityStep(String activeParticipantName) throws ActivityEngineProcessException;
 	public boolean saveActivityStep(String activeParticipantName) throws ActivityEngineProcessException;// save processObject data and contentObjectData
 	public boolean completeActivityStep(String activeParticipantName) throws ActivityEngineProcessException;
 	public boolean completeActivityStep(String activeParticipantName,Map<String,Object> processVariables) throws ActivityEngineProcessException;	
 	public boolean returnActivityStep() throws ActivityEngineProcessException;
 	public boolean reassignActivityStep(String newActiveParticipantName) throws ActivityEngineProcessException;
+	public boolean setActivityStepPriority(int priority) throws ActivityEngineProcessException;
+	public int getActivityStepPriority()throws ActivityEngineProcessException;
+	public boolean isSuspendedActivityStep() throws ActivityEngineProcessException;
+	public boolean delegateActivityStep(String delegateToParticipantName) throws ActivityEngineProcessException;
+	public boolean isDelegatedActivityStep() throws ActivityEngineProcessException;
+	public boolean finishDelegatedActivityStepWork() throws ActivityEngineProcessException;
+	public boolean finishDelegatedActivityStepWork(Map<String, Object> processVariables) throws ActivityEngineProcessException;
+	public int getActivityDefinitionVersion()throws ActivityEngineProcessException;
 	
 	//Comment management
 	public void addComment(ActivityComment activityComment);

@@ -2595,6 +2595,33 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     }
 
     @Override
+    public boolean suspendBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException{
+    	 ProcessSpace targetProcessSpace;
+         try {
+             targetProcessSpace = ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+             targetProcessSpace.suspendProcessByProcessObjectId(activityId);
+              
+             targetProcessSpace.closeProcessSpace();
+              return true;
+         } catch (ProcessRepositoryRuntimeException e) {
+             e.printStackTrace();
+             throw new ActivityEngineProcessException();
+         }
+    }
+    
+    @Override
+	public boolean activateBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException{
+		 ProcessSpace targetProcessSpace;
+	     try {
+	    	 targetProcessSpace = ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+	         return targetProcessSpace.activateProcessByProcessObjectId(activityId);
+	     } catch (ProcessRepositoryRuntimeException e) {
+	         e.printStackTrace();
+	         throw new ActivityEngineProcessException();
+	     }
+	}
+     
+    @Override
     public BusinessActivity getBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException {
         ProcessSpace targetProcessSpace;
         try {

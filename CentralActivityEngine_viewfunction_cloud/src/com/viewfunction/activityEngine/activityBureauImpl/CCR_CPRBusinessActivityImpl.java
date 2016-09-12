@@ -352,5 +352,40 @@ public class CCR_CPRBusinessActivityImpl implements BusinessActivity,Serializabl
 		String activityTypeFolderRootAbsPath="/"+this.activityType+"/";
 		String currentBusinessActivityFolderFullPath=activityTypeFolderRootAbsPath+this.activityId+"/"+CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_attachment+"/";	
 		return currentBusinessActivityFolderFullPath;
+	}
+
+	@Override
+	public Integer getActivityDefinitionVersion() throws ActivityEngineProcessException{
+		Integer definitionVersion=null;
+		if(this.processObject!=null){
+			definitionVersion= this.processObject.getProcessDefinitionVersion();
+		}else{
+			try {
+				ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+				ProcessObject processObject=targetProcessSpace.getProcessObjectById(this.activityId);
+				definitionVersion=processObject.getProcessDefinitionVersion();
+			} catch (ProcessRepositoryRuntimeException e) {			
+				e.printStackTrace();
+				throw new ActivityEngineProcessException();
+			}
+		}
+		return definitionVersion;
+	}
+
+	@Override
+	public boolean isSuspendedActivity() throws ActivityEngineProcessException{
+		if(this.processObject!=null){
+			return this.processObject.isSuspended();
+		}else{
+			try {
+				ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+				ProcessObject targetProcessObject=targetProcessSpace.getProcessObjectById(this.activityId);
+				this.processObject=targetProcessObject;
+				return this.processObject.isSuspended();
+			} catch (ProcessRepositoryRuntimeException e) {			
+				e.printStackTrace();
+				throw new ActivityEngineProcessException();
+			}
+		}
 	}	
 }

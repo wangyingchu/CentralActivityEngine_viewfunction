@@ -451,5 +451,80 @@ public class CCR_CPRActivityStepImpl implements ActivityStep,Serializable{
 		}else{
 			throw new ActivityEngineProcessException();
 		}		
+	}
+
+	@Override
+	public boolean setActivityStepPriority(int priority) throws ActivityEngineProcessException {
+		try {
+			return this.processStep.setStepPriority(priority);
+		} catch (ProcessRepositoryRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		}
+	}
+
+	@Override
+	public int getActivityStepPriority() throws ActivityEngineProcessException {
+		try {
+			return this.processStep.getStepPriority();
+		} catch (ProcessRepositoryRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		}
+	}
+
+	@Override
+	public boolean isSuspendedActivityStep() throws ActivityEngineProcessException {
+		try {
+			return this.processStep.isSuspendedStep();
+		} catch (ProcessRepositoryRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		}
+	}
+
+	@Override
+	public boolean delegateActivityStep(String delegateToParticipantName) throws ActivityEngineProcessException {
+		try {
+			return this.processStep.delegateCurrentStep(delegateToParticipantName);
+		} catch (ProcessRepositoryRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		}
+	}
+
+	@Override
+	public boolean isDelegatedActivityStep() throws ActivityEngineProcessException {
+		try {
+			return this.processStep.isDelegatedStep();
+		} catch (ProcessRepositoryRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		}
+	}
+
+	@Override
+	public boolean finishDelegatedActivityStepWork() throws ActivityEngineProcessException {
+		try {
+			return this.processStep.resolveDelegateJob();
+		} catch (ProcessRepositoryRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		}
+	}
+
+	@Override
+	public boolean finishDelegatedActivityStepWork(Map<String, Object> processVariables) throws ActivityEngineProcessException {
+		try {
+			return this.processStep.resolveDelegateJob(processVariables);
+		} catch (ProcessRepositoryRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineProcessException();
+		}
+	}
+
+	@Override
+	public int getActivityDefinitionVersion() throws ActivityEngineProcessException {
+		return this.processStep.getProcessDefinitionVersion();
 	}	
 }

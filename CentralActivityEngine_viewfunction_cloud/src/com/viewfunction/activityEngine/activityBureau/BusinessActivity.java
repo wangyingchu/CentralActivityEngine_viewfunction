@@ -38,4 +38,7 @@ public interface BusinessActivity {
 	public List<ActivityStep> getCurrentActivitySteps() throws ActivityEngineProcessException;
 	//get document content root folder path
 	public String getDocumentsFolderPath();
+	
+	public Integer getActivityDefinitionVersion()throws ActivityEngineProcessException;
+	public boolean isSuspendedActivity() throws ActivityEngineProcessException;
 }

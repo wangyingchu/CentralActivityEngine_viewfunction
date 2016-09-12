@@ -84,12 +84,15 @@ public interface ActivitySpace {
 	public BusinessActivity launchBusinessActivity(String activityType,ActivityData[] initActivityData,Map<String,Object> processVariables,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException;	
 	public List<BusinessActivity> getBusinessActivitiesByStartUserId(String startUserId,int activityStatus) throws ProcessRepositoryRuntimeException;	
 	public List<ActivityStep> getActivityStepsByInvolvedUserId(String involvedUserId,int activityStatus) throws ProcessRepositoryRuntimeException;	
-	public boolean deleteBusinessActivityByActivityId(String activityId,String deleteReason) throws ActivityEngineProcessException;
 	public ActivityStep getCurrentActivityStepByStepInfo(String activityType,String activityId,String activityStepName) throws ActivityEngineProcessException;
 	public ActivityStep getCurrentActivityStepByStepInfo(String activityId,String activityStepName) throws ActivityEngineProcessException;
 	public BusinessActivity getBusinessActivityByActivityInfo(String activityType,String activityId) throws ActivityEngineProcessException;
 	public BusinessActivity getBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException;
 	public ActivityStep getFinishedActivityStepByStepInfo(String activityType,String activityId, String activityStepName) throws ActivityEngineProcessException;
+	
+	public boolean deleteBusinessActivityByActivityId(String activityId,String deleteReason) throws ActivityEngineProcessException;
+	public boolean suspendBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException;
+	public boolean activateBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException;
 	
 	/*content management*/
 	public String getDocumentsFolderPath();
