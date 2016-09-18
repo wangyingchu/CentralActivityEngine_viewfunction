@@ -524,7 +524,7 @@ public class CCR_CPRActivityStepImpl implements ActivityStep,Serializable{
 	}
 
 	@Override
-	public int getActivityDefinitionVersion() throws ActivityEngineProcessException {
+	public int getActivityProcessVersion() throws ActivityEngineProcessException {
 		return this.processStep.getProcessDefinitionVersion();
 	}	
 }

@@ -243,8 +243,12 @@ public class CCR_CPRBusinessActivityImpl implements BusinessActivity,Serializabl
 
 	@Override
 	public BusinessActivityDefinition getActivityDefinition() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {		
-		ActivitySpace activitySpace =ActivityComponentFactory.getActivitySpace(this.activitySpaceName);
-		BusinessActivityDefinition businessActivityDefinition=activitySpace.getBusinessActivityDefinition(this.activityType);		
+		ActivitySpace activitySpace =ActivityComponentFactory.getActivitySpace(this.activitySpaceName);		
+		BusinessActivityDefinition businessActivityDefinition=activitySpace.getActivityInstanceActivityDefinitionSnapshoot(this.activityType, this.activityId);
+		//"roster name" and "isEnabled" are global parameters, should use definition's value,not snapshoot's value
+		BusinessActivityDefinition currentBusinessActivityDefinition=activitySpace.getBusinessActivityDefinition(this.activityType);
+		((CCRBusinessActivityDefinitionImpl)businessActivityDefinition).setRosterName(currentBusinessActivityDefinition.getRosterName());
+		((CCRBusinessActivityDefinitionImpl)businessActivityDefinition).setIsEnabled(currentBusinessActivityDefinition.isEnabled());
 		return businessActivityDefinition;
 	}
 
@@ -254,8 +258,10 @@ public class CCR_CPRBusinessActivityImpl implements BusinessActivity,Serializabl
 	}
 
 	@Override
-	public String getRosterName() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {		
-		return getActivityDefinition().getRosterName();
+	public String getRosterName() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
+		ActivitySpace activitySpace =ActivityComponentFactory.getActivitySpace(this.activitySpaceName);
+		BusinessActivityDefinition businessActivityDefinition=activitySpace.getBusinessActivityDefinition(this.activityType);
+		return businessActivityDefinition.getRosterName();
 	}
 	
 	private void initContentRepositoryParameter() throws ContentReposityRuntimeException{
@@ -355,7 +361,7 @@ public class CCR_CPRBusinessActivityImpl implements BusinessActivity,Serializabl
 	}
 
 	@Override
-	public Integer getActivityDefinitionVersion() throws ActivityEngineProcessException{
+	public Integer getActivityProcessVersion() throws ActivityEngineProcessException{
 		Integer definitionVersion=null;
 		if(this.processObject!=null){
 			definitionVersion= this.processObject.getProcessDefinitionVersion();

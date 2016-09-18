@@ -106,6 +106,12 @@ public static String testActivitySpace="testActivitySpace_01";
 		launchDataArray[1]=ad2;
 		activitySpace.launchBusinessActivity("businessActivityType1", launchDataArray,null);
 		
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		
 		List<BusinessActivity> baList=roster1.fetchBusinessActivitys();
 		
 		for(BusinessActivity businessActivity:baList){			

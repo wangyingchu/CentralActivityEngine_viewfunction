@@ -50,7 +50,8 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	private HashMap<String,String> activityLaunchRolesMap;
 	private HashMap<String,String> activityLaunchParticipantsMap;
 	private HashMap<String,String> activityCategoriesMap;
-	
+	private long metaConfigurationVersion;
+		
 	public CCRBusinessActivityDefinitionImpl(String activityType,String activitySpaceName){
 		this.activityType=activityType;
 		this.activitySpaceName=activitySpaceName;
@@ -634,6 +635,32 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	        }
 		return null;
 	}
+	
+	@Override
+	public ActivityStepDefinition[] getDefinedSteps(int activityTypeDefinitionVersion) throws ActivityEngineActivityException, ActivityEngineRuntimeException {
+		if(this.activitySpaceName==null||this.activityType==null){
+			throw new ActivityEngineRuntimeException();
+		}
+		try {
+		 	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+		 	List<ProcessStepDefinition> processStepDefinList=targetProcessSpace.getProcessStepsInfoByDefinitionName(this.activityType,activityTypeDefinitionVersion);
+		 	if(processStepDefinList!=null){
+		 		ActivityStepDefinition[] stepDefinitionArray=new ActivityStepDefinition[processStepDefinList.size()];
+		 			for(int i=0;i<processStepDefinList.size();i++){
+		 				ActivityStepDefinition currentStepDefinition=new ActivityStepDefinition();
+	            		currentStepDefinition.setStepId(processStepDefinList.get(i).getStepId());
+	            		currentStepDefinition.setStepName(processStepDefinList.get(i).getStepName());
+	            		currentStepDefinition.setStepDescription(processStepDefinList.get(i).getStepDescription());
+	            		stepDefinitionArray[i]=currentStepDefinition;
+	            	}
+	            	return stepDefinitionArray;
+	            }
+	        } catch (ProcessRepositoryRuntimeException e) {
+	            e.printStackTrace();
+	            throw new ActivityEngineActivityException();
+	        }
+		return null;
+	}
 
 	@Override
 	public InputStream getDefinitionFlowDiagram() throws ActivityEngineRuntimeException {
@@ -643,6 +670,20 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 		try {
 		 	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
 		 	return targetProcessSpace.getProcessDefinitionFlowDiagram(this.activityType);
+		} catch (ProcessRepositoryRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+	    }
+	}
+	
+	@Override
+	public InputStream getDefinitionFlowDiagram(int activityTypeDefinitionVersion) throws ActivityEngineRuntimeException {
+		if(this.activitySpaceName==null||this.activityType==null){
+			throw new ActivityEngineRuntimeException();
+		}
+		try {
+		 	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+		 	return targetProcessSpace.getProcessDefinitionFlowDiagram(this.activityType,activityTypeDefinitionVersion);
 		} catch (ProcessRepositoryRuntimeException e) {
 			e.printStackTrace();
 			throw new ActivityEngineRuntimeException();
@@ -662,4 +703,27 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 		}
 		return null;
 	}
+	
+	@Override
+	public InputStream getDefinitionFlowXML(int activityTypeDefinitionVersion) throws ActivityEngineRuntimeException {		
+		if(this.activitySpaceName!=null&&this.activityType!=null){
+			try {
+			 	ProcessSpace targetProcessSpace=ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+			 	return targetProcessSpace.getProcessDefinitionFile(this.activityType,activityTypeDefinitionVersion);
+			} catch (ProcessRepositoryRuntimeException e) {
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+		    }
+		}
+		return null;
+	}
+
+	@Override
+	public long getMetaConfigurationVersion() {
+		return this.metaConfigurationVersion;
+	}	
+	
+	public void setMetaConfigurationVersion(long configVersion) {
+		this.metaConfigurationVersion=configVersion;
+	}	
 }

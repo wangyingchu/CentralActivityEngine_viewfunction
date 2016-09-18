@@ -35,6 +35,7 @@ public interface CCRActivityEngineConstant {
 	String ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList="ActivityDefinition_StepDecisionPointChoiseList";		
 	String ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList="ActivityDefinition_StepProcessVariableList";
 	String ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName="ActivityDefinition_StepUserIdentityAttributeName";
+	String ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion="ActivityDefinition_metaConfigVersion";
 	
 	//Activity Content store definition  
 	String ACTIVITYSPACE_ContentStore="ActivitySpace_ContentStore";	
@@ -82,6 +83,7 @@ public interface CCRActivityEngineConstant {
 	String ACTIVITYSPACE_ActivityInstanceDefinition_processDefinitionId="ActivityInstanceDefinition_processDefinitionId";
 	String ACTIVITYSPACE_ActivityInstanceDefinition_dataFields="ActivityInstance_dataFields";
 	String ACTIVITYSPACE_ActivityInstanceDefinition_attachment="ActivityInstance_attachment";	
+	String ACTIVITYSPACE_ActivityInstanceDefinition_relatedActivityTypeDefinitionSnapshoot="ActivityInstance_processDefinitionSnapShoot";
 	
 	//custom properties define
 	String ACTIVITYSPACE_CustomAttributeStore="CustomAttributeStore";

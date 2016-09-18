@@ -50,7 +50,7 @@ public interface ActivityStep {
 	public boolean isDelegatedActivityStep() throws ActivityEngineProcessException;
 	public boolean finishDelegatedActivityStepWork() throws ActivityEngineProcessException;
 	public boolean finishDelegatedActivityStepWork(Map<String, Object> processVariables) throws ActivityEngineProcessException;
-	public int getActivityDefinitionVersion()throws ActivityEngineProcessException;
+	public int getActivityProcessVersion()throws ActivityEngineProcessException;
 	
 	//Comment management
 	public void addComment(ActivityComment activityComment);

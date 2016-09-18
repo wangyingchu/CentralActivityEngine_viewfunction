@@ -22,6 +22,7 @@ public interface BusinessActivityDefinition {
 	public boolean setActivityCategories(String[] activityCategories);
 	public boolean addActivityCategory(String activityCategory);
 	public boolean removeActivityCategory(String activityCategory);
+	public long getMetaConfigurationVersion();
 		
 	//contented data object
 	public DataFieldDefinition[] getActivityDataFields();
@@ -55,6 +56,7 @@ public interface BusinessActivityDefinition {
 	public void setExposedSteps(String[] steps);
 	public String[] getExposedSteps();	
 	public ActivityStepDefinition[] getDefinedSteps() throws ActivityEngineActivityException, ActivityEngineRuntimeException;
+	public ActivityStepDefinition[] getDefinedSteps(int activityTypeDefinitionVersion) throws ActivityEngineActivityException, ActivityEngineRuntimeException;
 	
 	public Map<String,String> getActivityStepRoleMap();		
 	public boolean setActivityStepRelatedRole(String stepDefineKey,String roleName) throws ActivityEngineProcessException;
@@ -66,7 +68,9 @@ public interface BusinessActivityDefinition {
 	public boolean isDefinitionResourceUpdated();
 	public void setDefinitionResourceUpdated(boolean updateFlag);
 	public InputStream getDefinitionFlowDiagram()throws ActivityEngineRuntimeException;
+	public InputStream getDefinitionFlowDiagram(int activityTypeDefinitionVersion)throws ActivityEngineRuntimeException;
 	public InputStream getDefinitionFlowXML()throws ActivityEngineRuntimeException;
+	public InputStream getDefinitionFlowXML(int activityTypeDefinitionVersion)throws ActivityEngineRuntimeException;
 	public String getRosterName();
 	
 	//Define Process operation data

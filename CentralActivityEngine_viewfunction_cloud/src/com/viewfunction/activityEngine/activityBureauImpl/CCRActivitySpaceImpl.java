@@ -862,6 +862,14 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 throw new ActivityEngineActivityException();
             }else{
                 List<ContentObjectProperty> defineParamLst=new ArrayList<ContentObjectProperty>();
+                
+                ContentObjectProperty activityDefineMetaConfigVerProperty=ContentComponentFactory.createContentObjectProperty();
+                activityDefineMetaConfigVerProperty.setMultiple(false);
+                activityDefineMetaConfigVerProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                activityDefineMetaConfigVerProperty.setPropertyType(PropertyType.LONG);
+                activityDefineMetaConfigVerProperty.setPropertyValue(new Long(1));
+                defineParamLst.add(activityDefineMetaConfigVerProperty);
+                
                 ContentObjectProperty activityDefineStatusProperty=ContentComponentFactory.createContentObjectProperty();
                 activityDefineStatusProperty.setMultiple(false);
                 activityDefineStatusProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
@@ -1320,8 +1328,13 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 }
                 BaseContentObject activityObj=activityDefineObj.getSubContentObject(activityType);
                 List<ContentObjectProperty> orginalPropertes=activityObj.getProperties();
+                long newMetaConfigVersion=0;
                 for(ContentObjectProperty contentObjectProperty:orginalPropertes){
-                    activityObj.removeProperty(contentObjectProperty.getPropertyName(), false);
+                	if(contentObjectProperty.getPropertyName().equals(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion)){
+                		Long currentVersion=(Long)contentObjectProperty.getPropertyValue();
+                		newMetaConfigVersion=currentVersion+1;
+                	}
+                	activityObj.removeProperty(contentObjectProperty.getPropertyName(), false);
                 }
                 activityObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields, false);
                 activityObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, false);
@@ -1332,13 +1345,21 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 }
 
                 List<ContentObjectProperty> defineParamLst=new ArrayList<ContentObjectProperty>();
+                
+                ContentObjectProperty activityDefineMetaConfigVerProperty=ContentComponentFactory.createContentObjectProperty();
+                activityDefineMetaConfigVerProperty.setMultiple(false);
+                activityDefineMetaConfigVerProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                activityDefineMetaConfigVerProperty.setPropertyType(PropertyType.LONG);
+                activityDefineMetaConfigVerProperty.setPropertyValue(new Long(newMetaConfigVersion));
+                defineParamLst.add(activityDefineMetaConfigVerProperty);
+                
                 ContentObjectProperty activityDefineStatusProperty=ContentComponentFactory.createContentObjectProperty();
                 activityDefineStatusProperty.setMultiple(false);
                 activityDefineStatusProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
                 activityDefineStatusProperty.setPropertyType(PropertyType.BOOLEAN);
                 activityDefineStatusProperty.setPropertyValue(true);
                 defineParamLst.add(activityDefineStatusProperty);
-
+                
                 ContentObjectProperty exposedStepsProperty=ContentComponentFactory.createContentObjectProperty();
                 exposedStepsProperty.setMultiple(true);
                 exposedStepsProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
@@ -1903,6 +1924,9 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 BusinessActivityDefinition bsd=ActivityComponentFactory.createBusinessActivityDefinition(targetActivityDefineObj.getContentObjectName(), this.activitySpaceName,null);
                 bsd.setActivityDataFields(dfdArray);
 
+                long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
+                ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
+                
                 boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
                 ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
                 ContentObjectProperty rosterPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_belongsToRoster);
@@ -2099,6 +2123,260 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         }
     }
 
+    public BusinessActivityDefinition getActivityInstanceActivityDefinitionSnapshoot(String activityType,String activityId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
+    	try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}
+    	ContentSpace activityContentSpace = null;
+		try {
+			activityContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, this.activitySpaceName);
+			RootContentObject activityTypeRootObject=activityContentSpace.getRootContentObject(activityType);			
+			if(activityTypeRootObject==null){
+				throw new  ActivityEngineDataException();								
+			}
+			BaseContentObject activityInstanceObj=activityTypeRootObject.getSubContentObject(activityId);
+			if(activityInstanceObj==null){
+				throw new  ActivityEngineDataException();
+			}
+			BaseContentObject activityInstanceDefinitionSnapshootObj=activityInstanceObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_relatedActivityTypeDefinitionSnapshoot);	
+			if(activityInstanceDefinitionSnapshootObj!=null){
+				BaseContentObject activityInstanceDefinitionObj=activityInstanceDefinitionSnapshootObj.getSubContentObject(activityType);
+				if(activityInstanceDefinitionObj!=null){
+					BaseContentObject targetActivityDefineObj=activityInstanceDefinitionObj;
+					BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
+	                long dataFieldDefineNum=dataFieldObj.getSubContentObjectsCount();
+	                List<BaseContentObject> dataFieldDefineObjList=dataFieldObj.getSubContentObjects(null);
+	                DataFieldDefinition[] dfdArray=new DataFieldDefinition[(int)dataFieldDefineNum];
+	                for(int i=0;i<dataFieldDefineObjList.size();i++){
+	                    BaseContentObject dataFieldDefin=dataFieldDefineObjList.get(i);
+	                    int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
+	                    String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
+	                    String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
+	                    boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
+	                    boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
+	                    boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
+	                    boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
+	                    boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
+
+	                    DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
+	                    dfd.setDescription(activityDefineDesc);
+	                    dfd.setDisplayName(activityDefineDisplayName);
+	                    dfd.setMandatoryField(activityDefineIsMandatoryField);
+	                    dfd.setSystemField(activityDefineIsSystemField);
+	                    dfd.setReadableField(activityDefineIsReadableField);
+	                    dfd.setWriteableField(activityDefineIsWriteableField);
+	                    dfdArray[i]=dfd;
+	                }
+	                BusinessActivityDefinition bsd=ActivityComponentFactory.createBusinessActivityDefinition(targetActivityDefineObj.getContentObjectName(), this.activitySpaceName,null);
+	                bsd.setActivityDataFields(dfdArray);
+	                
+	                long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
+	                ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
+	                
+	                boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
+	                ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
+	                ContentObjectProperty rosterPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_belongsToRoster);
+	                if(rosterPro!=null){
+	                    String rosterName= rosterPro.getPropertyValue().toString();
+	                    ((CCRBusinessActivityDefinitionImpl)bsd).setRosterName(rosterName);
+	                }
+	                
+	                ContentObjectProperty launchDecisionPointAttrPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName);
+	                if(launchDecisionPointAttrPro!=null){
+	                    String decisionPointAttrName=launchDecisionPointAttrPro.getPropertyValue().toString();
+	                    bsd.setLaunchDecisionPointAttributeName(decisionPointAttrName);
+	                }
+
+	                ContentObjectProperty launchDecisionPointChoiseListPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList);
+	                if(launchDecisionPointChoiseListPro!=null){
+	                    String[] decisionPointOptionList;
+	                    if(launchDecisionPointChoiseListPro.isMultiple()){
+	                        decisionPointOptionList=(String[])launchDecisionPointChoiseListPro.getPropertyValue();
+	                    }else{
+	                        decisionPointOptionList=new String[1];
+	                        decisionPointOptionList[0]=launchDecisionPointChoiseListPro.getPropertyValue().toString();
+	                    }
+	                    bsd.setLaunchDecisionPointChoiseList(decisionPointOptionList);
+	                }
+
+	                ContentObjectProperty launchUserIdentityAttrPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName);
+	                if(launchUserIdentityAttrPro!=null){
+	                    String launchUserIdentityAttrName=launchUserIdentityAttrPro.getPropertyValue().toString();
+	                    bsd.setLaunchUserIdentityAttributeName(launchUserIdentityAttrName);
+	                }
+
+	                ContentObjectProperty launchProcessVariableListPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList);
+	                if(launchProcessVariableListPro!=null){
+	                    String[] launchProcessVariableList;
+	                    if(launchProcessVariableListPro.isMultiple()){
+	                        launchProcessVariableList=(String[])launchProcessVariableListPro.getPropertyValue();
+	                    }else{
+	                        launchProcessVariableList=new String[1];
+	                        launchProcessVariableList[0]=launchProcessVariableListPro.getPropertyValue().toString();
+	                    }
+	                    bsd.setLaunchProcessVariableList(launchProcessVariableList);
+	                }
+
+	                String[] exposedSteps=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps).getPropertyValue());
+	                bsd.setExposedSteps(exposedSteps);
+
+	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles)!=null){
+	                    String[] launchRolesList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles).getPropertyValue());
+	                    bsd.setActivityLaunchRoles(launchRolesList);
+	                }
+
+	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants)!=null){
+	                    String[] launchParticipantsList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants).getPropertyValue());
+	                    bsd.setActivityLaunchParticipants(launchParticipantsList);
+	                }
+
+	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories)!=null){
+	                    String[] activityCategoriesList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories).getPropertyValue());
+	                    bsd.setActivityCategories(activityCategoriesList);
+	                }
+
+	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description)!=null){
+	                    String activityDescription=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description).getPropertyValue().toString();
+	                    bsd.setActivityDescription(activityDescription);
+	                }
+
+	                /* not include definition resource file in activity instance level
+	                BaseContentObject defineResourceObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource);
+	                ContentOperationHelper coh=ContentComponentFactory.getContentOperationHelper();
+	                TextContent defineXMLContent=coh.getTextContent(defineResourceObj, activityType+".bpmn20.xml");
+	                if(defineXMLContent!=null){
+	                    bsd.setDefinitionResource(defineXMLContent.getContentInputStream());
+	                }else{
+	                    //throw new ActivityEngineActivityException();
+	                    System.out.println("ERROR: activityDefinition XML is miss["+activityType+"]");
+	                }
+	                */
+	                
+	                BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+	                if(stepsObj!=null){
+	                    List<BaseContentObject> stepDataFieldDefineObjList=stepsObj.getSubContentObjects(null);
+	                    for(BaseContentObject stepDefinObj:stepDataFieldDefineObjList){
+	                        String stepName=stepDefinObj.getContentObjectName();
+
+	                        ContentObjectProperty roleProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole);
+	                        if(roleProperty!=null){
+	                            try {
+	                                bsd.setActivityStepRelatedRole(stepName, roleProperty.getPropertyValue().toString());
+	                            } catch (ActivityEngineProcessException e) {
+	                                e.printStackTrace();
+	                                throw new ActivityEngineActivityException();
+	                            }
+	                        }
+
+	                        ContentObjectProperty stepDecisionPointAttrPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName);
+	                        if(stepDecisionPointAttrPro!=null){
+	                            String decisionPointAttrName=stepDecisionPointAttrPro.getPropertyValue().toString();
+	                            bsd.setStepDecisionPointAttributeName(stepDefinObj.getContentObjectName(), decisionPointAttrName);
+	                        }
+
+	                        ContentObjectProperty stepDecisionPointChoiseListPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList);
+	                        if(stepDecisionPointChoiseListPro!=null){
+	                            String[] decisionPointOptionList;
+	                            if(stepDecisionPointChoiseListPro.isMultiple()){
+	                                decisionPointOptionList=(String[])stepDecisionPointChoiseListPro.getPropertyValue();
+	                            }else{
+	                                decisionPointOptionList=new String[1];
+	                                decisionPointOptionList[0]=stepDecisionPointChoiseListPro.getPropertyValue().toString();
+	                            }
+	                            bsd.setStepDecisionPointChoiseList(stepDefinObj.getContentObjectName(), decisionPointOptionList);
+	                        }
+
+	                        ContentObjectProperty stepProcessVariableListPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList);
+	                        if(stepProcessVariableListPro!=null){
+	                            String[] stepProcessVariableList;
+	                            if(stepProcessVariableListPro.isMultiple()){
+	                                stepProcessVariableList=(String[])stepProcessVariableListPro.getPropertyValue();
+	                            }else{
+	                                stepProcessVariableList=new String[1];
+	                                stepProcessVariableList[0]=stepProcessVariableListPro.getPropertyValue().toString();
+	                            }
+	                            bsd.setStepProcessVariableList(stepDefinObj.getContentObjectName(), stepProcessVariableList);
+	                        }
+
+	                        ContentObjectProperty stepUserIdentityAttrPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName);
+	                        if(stepUserIdentityAttrPro!=null){
+	                            String stepUserIdentityAttrName=stepUserIdentityAttrPro.getPropertyValue().toString();
+	                            bsd.setStepUserIdentityAttributeName(stepDefinObj.getContentObjectName(), stepUserIdentityAttrName);
+	                        }
+
+	                        List<BaseContentObject> stepDataFieldDefObj=stepDefinObj.getSubContentObjects(null);
+	                        DataFieldDefinition[] stepDfdArray=new DataFieldDefinition[stepDataFieldDefObj.size()];
+	                        for(int i=0;i<stepDataFieldDefObj.size();i++){
+	                            BaseContentObject dataFieldDefin=stepDataFieldDefObj.get(i);
+	                            int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
+	                            String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
+	                            String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
+	                            boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
+	                            boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
+	                            boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
+	                            boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
+	                            boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
+
+	                            DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
+	                            dfd.setDescription(activityDefineDesc);
+	                            dfd.setDisplayName(activityDefineDisplayName);
+	                            dfd.setMandatoryField(activityDefineIsMandatoryField);
+	                            dfd.setSystemField(activityDefineIsSystemField);
+	                            dfd.setReadableField(activityDefineIsReadableField);
+	                            dfd.setWriteableField(activityDefineIsWriteableField);
+	                            stepDfdArray[i]=dfd;
+	                        }
+	                        bsd.setActivityStepExposedDataFields(stepName, stepDfdArray);
+	                    }
+	                }else{
+	                    //throw new ActivityEngineActivityException();
+	                    System.out.println("ERROR: activityDefinition Step Data is miss["+activityType+"]");
+	                }
+
+	                BaseContentObject activityLaunchPointMeteObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPoint);
+	                if(activityLaunchPointMeteObj!=null){
+	                    BaseContentObject activityLaunchpointDataFieldsObject=activityLaunchPointMeteObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields);
+	                    if(activityLaunchpointDataFieldsObject!=null){
+	                        List<BaseContentObject> launchPointDataFieldDefObj=activityLaunchpointDataFieldsObject.getSubContentObjects(null);
+	                        DataFieldDefinition[] launchPointDfdArray=new DataFieldDefinition[launchPointDataFieldDefObj.size()];
+	                        for(int i=0;i<launchPointDataFieldDefObj.size();i++){
+	                            BaseContentObject dataFieldDefin=launchPointDataFieldDefObj.get(i);
+	                            int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
+	                            String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
+	                            String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
+	                            boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
+	                            boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
+	                            boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
+	                            boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
+	                            boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
+
+	                            DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
+	                            dfd.setDescription(activityDefineDesc);
+	                            dfd.setDisplayName(activityDefineDisplayName);
+	                            dfd.setMandatoryField(activityDefineIsMandatoryField);
+	                            dfd.setSystemField(activityDefineIsSystemField);
+	                            dfd.setReadableField(activityDefineIsReadableField);
+	                            dfd.setWriteableField(activityDefineIsWriteableField);
+	                            launchPointDfdArray[i]=dfd;
+	                        }
+	                        bsd.setLaunchPointExposedDataFields(launchPointDfdArray);
+	                    }
+	                }
+	                return bsd;
+				}
+			}
+		}catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			activityContentSpace.closeContentSpace();			
+		}
+    	return this.getBusinessActivityDefinition(activityType);
+    }
+     
     @Override
     public BusinessActivity launchBusinessActivity(String activityType,	ActivityData[] initActivityData,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
         BusinessActivityDefinition currentActivityDefin=getBusinessActivityDefinition(activityType);
@@ -2147,6 +2425,9 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             activityInstanceObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_dataFields, activityInitDataPropList, false);
             //Add activity's attachment container
             activityInstanceObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_attachment, null, false);
+            //Add activity's ActivityType definition snapshoot
+            BaseContentObject snapshootContainer=activityInstanceObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_relatedActivityTypeDefinitionSnapshoot, null, false);
+            persistActivityInstanceTypeDefinitionSnapshoot(snapshootContainer,currentActivityDefin);
         } catch (ContentReposityException e) {
             e.printStackTrace();
             throw new ActivityEngineRuntimeException();
@@ -2205,6 +2486,9 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             activityInstanceObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_dataFields, activityInitDataPropList, false);
             //Add activity's attachment container
             activityInstanceObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_attachment, null, false);
+            //Add activity's ActivityType definition snapshoot
+            BaseContentObject snapshootContainer=activityInstanceObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_relatedActivityTypeDefinitionSnapshoot, null, false);
+            persistActivityInstanceTypeDefinitionSnapshoot(snapshootContainer,currentActivityDefin);
         } catch (ContentReposityException e) {
             e.printStackTrace();
             throw new ActivityEngineRuntimeException();
@@ -2213,6 +2497,354 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         }
         BusinessActivity businessActivity=ActivityComponentFactory.createBusinessActivity(processId,this.activitySpaceName,activityType);
         return businessActivity;
+    }   
+    
+    private void persistActivityInstanceTypeDefinitionSnapshoot(BaseContentObject snapshootContainer,BusinessActivityDefinition bd)throws ActivityEngineActivityException, ActivityEngineDataException, ActivityEngineRuntimeException{
+    	String activityType=bd.getActivityType();
+    	BaseContentObject activityDefineObj=snapshootContainer;
+    	try{
+    		List<ContentObjectProperty> defineParamLst=new ArrayList<ContentObjectProperty>();
+    		
+    		ContentObjectProperty activityDefineMetaConfigVerProperty=ContentComponentFactory.createContentObjectProperty();
+            activityDefineMetaConfigVerProperty.setMultiple(false);
+            activityDefineMetaConfigVerProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+            activityDefineMetaConfigVerProperty.setPropertyType(PropertyType.LONG);
+            activityDefineMetaConfigVerProperty.setPropertyValue(new Long(bd.getMetaConfigurationVersion()));
+            defineParamLst.add(activityDefineMetaConfigVerProperty);
+    		    		
+            ContentObjectProperty activityDefineStatusProperty=ContentComponentFactory.createContentObjectProperty();
+            activityDefineStatusProperty.setMultiple(false);
+            activityDefineStatusProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
+            activityDefineStatusProperty.setPropertyType(PropertyType.BOOLEAN);
+            activityDefineStatusProperty.setPropertyValue(true);
+            defineParamLst.add(activityDefineStatusProperty);
+
+            ContentObjectProperty exposedStepsProperty=ContentComponentFactory.createContentObjectProperty();
+            exposedStepsProperty.setMultiple(true);
+            exposedStepsProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
+            exposedStepsProperty.setPropertyType(PropertyType.STRING);
+            exposedStepsProperty.setPropertyValue(bd.getExposedSteps());
+            defineParamLst.add(exposedStepsProperty);
+
+            if(bd.getLaunchDecisionPointAttributeName()!=null){
+                ContentObjectProperty launchDecisionPointAttributeNameProperty=ContentComponentFactory.createContentObjectProperty();
+                launchDecisionPointAttributeNameProperty.setMultiple(false);
+                launchDecisionPointAttributeNameProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName);
+                launchDecisionPointAttributeNameProperty.setPropertyType(PropertyType.STRING);
+                launchDecisionPointAttributeNameProperty.setPropertyValue(bd.getLaunchDecisionPointAttributeName());
+                defineParamLst.add(launchDecisionPointAttributeNameProperty);
+            }
+            if(bd.getLaunchDecisionPointChoiseList()!=null){
+                ContentObjectProperty launchDecisionPointChoiseListProperty=ContentComponentFactory.createContentObjectProperty();
+                launchDecisionPointChoiseListProperty.setMultiple(true);
+                launchDecisionPointChoiseListProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList);
+                launchDecisionPointChoiseListProperty.setPropertyType(PropertyType.STRING);
+                launchDecisionPointChoiseListProperty.setPropertyValue(bd.getLaunchDecisionPointChoiseList());
+                defineParamLst.add(launchDecisionPointChoiseListProperty);
+            }
+            if(bd.getLaunchProcessVariableList()!=null){
+                ContentObjectProperty launchProcessVariableListProperty=ContentComponentFactory.createContentObjectProperty();
+                launchProcessVariableListProperty.setMultiple(true);
+                launchProcessVariableListProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList);
+                launchProcessVariableListProperty.setPropertyType(PropertyType.STRING);
+                launchProcessVariableListProperty.setPropertyValue(bd.getLaunchProcessVariableList());
+                defineParamLst.add(launchProcessVariableListProperty);
+            }
+            if(bd.getLaunchUserIdentityAttributeName()!=null){
+                ContentObjectProperty launchUserIdentityAttributeNameProperty=ContentComponentFactory.createContentObjectProperty();
+                launchUserIdentityAttributeNameProperty.setMultiple(false);
+                launchUserIdentityAttributeNameProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName);
+                launchUserIdentityAttributeNameProperty.setPropertyType(PropertyType.STRING);
+                launchUserIdentityAttributeNameProperty.setPropertyValue(bd.getLaunchUserIdentityAttributeName());
+                defineParamLst.add(launchUserIdentityAttributeNameProperty);
+            }
+            if(bd.getActivityLaunchParticipants()!=null){
+                ContentObjectProperty launchParticipantListProperty=ContentComponentFactory.createContentObjectProperty();
+                launchParticipantListProperty.setMultiple(true);
+                launchParticipantListProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants);
+                launchParticipantListProperty.setPropertyType(PropertyType.STRING);
+                launchParticipantListProperty.setPropertyValue(bd.getActivityLaunchParticipants());
+                defineParamLst.add(launchParticipantListProperty);
+            }
+            if(bd.getActivityLaunchRoles()!=null){
+                ContentObjectProperty launchRoleListProperty=ContentComponentFactory.createContentObjectProperty();
+                launchRoleListProperty.setMultiple(true);
+                launchRoleListProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles);
+                launchRoleListProperty.setPropertyType(PropertyType.STRING);
+                launchRoleListProperty.setPropertyValue(bd.getActivityLaunchRoles());
+                defineParamLst.add(launchRoleListProperty);
+            }
+            if(bd.getActivityCategories()!=null){
+                ContentObjectProperty activityCategoriesProperty=ContentComponentFactory.createContentObjectProperty();
+                activityCategoriesProperty.setMultiple(true);
+                activityCategoriesProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories);
+                activityCategoriesProperty.setPropertyType(PropertyType.STRING);
+                activityCategoriesProperty.setPropertyValue(bd.getActivityCategories());
+                defineParamLst.add(activityCategoriesProperty);
+            }
+            ContentObjectProperty activityDescriptionProperty=ContentComponentFactory.createContentObjectProperty();
+            activityDescriptionProperty.setMultiple(false);
+            activityDescriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description);
+            activityDescriptionProperty.setPropertyType(PropertyType.STRING);
+            if(bd.getActivityDescription()!=null){
+                activityDescriptionProperty.setPropertyValue(bd.getActivityDescription());
+            }else{
+                activityDescriptionProperty.setPropertyValue("");
+            }
+            defineParamLst.add(activityDescriptionProperty);
+
+            BaseContentObject activityObj=activityDefineObj.addSubContentObject(activityType, defineParamLst, true);
+            BaseContentObject dataFieldObj=activityObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields, null, false);
+            BaseContentObject defineResourceObj=activityObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource, null, false);
+            // is it necessary to save the definition resource file in each activity instance ?
+            /*
+            Object definitionResource=bd.getDefinitionResource();
+            String businessActivityDefineFileName=bd.getActivityType()+".bpmn20.xml";
+            InputStream businessActivityDefineFileInputStream=(InputStream)definitionResource;
+            try {
+                File activityProcessDefineFile=new File(businessActivityDefineFileName);
+                OutputStream out=new FileOutputStream(activityProcessDefineFile);
+                byte buf[]=new byte[1024];
+                int len;
+                while((len=businessActivityDefineFileInputStream.read(buf))>0){
+                    out.write(buf,0,len);
+                }
+                out.close();
+                businessActivityDefineFileInputStream.close();
+                //add process define xml file in content repository
+                ContentOperationHelper coh=ContentComponentFactory.getContentOperationHelper();
+                boolean addProcessDefineResult=coh.addTextContent(defineResourceObj, activityProcessDefineFile, businessActivityDefineFileName, true);
+                if(!addProcessDefineResult){
+                    throw new ActivityEngineDataException();
+                }
+               activityProcessDefineFile.delete();
+            }  catch (FileNotFoundException e) {
+                e.printStackTrace();
+                throw new ActivityEngineDataException();
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new ActivityEngineDataException();
+            }
+            */
+            
+            DataFieldDefinition[] dfdArray=bd.getActivityDataFields();
+            if(dfdArray==null){
+                throw new ActivityEngineDataException();
+            }
+            for(DataFieldDefinition df:dfdArray){
+                List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
+                ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+                fieldTypeProperty.setMultiple(false);
+                fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+                fieldTypeProperty.setPropertyType(PropertyType.LONG);
+                fieldTypeProperty.setPropertyValue(new Long(df.getFieldType()));
+                paramLst.add(fieldTypeProperty);
+
+                ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+                displayProperty.setMultiple(false);
+                displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+                displayProperty.setPropertyType(PropertyType.STRING);
+                displayProperty.setPropertyValue(df.getDisplayName());
+                paramLst.add(displayProperty);
+
+                ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+                descriptionProperty.setMultiple(false);
+                descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+                descriptionProperty.setPropertyType(PropertyType.STRING);
+                descriptionProperty.setPropertyValue(df.getDescription());
+                paramLst.add(descriptionProperty);
+
+                ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                isArrayFieldProperty.setMultiple(false);
+                isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+                isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                isArrayFieldProperty.setPropertyValue(df.isArrayField());
+                paramLst.add(isArrayFieldProperty);
+
+                ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                isSystemFieldProperty.setMultiple(false);
+                isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+                isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                isSystemFieldProperty.setPropertyValue(df.isSystemField());
+                paramLst.add(isSystemFieldProperty);
+
+                ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                isMandatoryFieldProperty.setMultiple(false);
+                isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+                isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                isMandatoryFieldProperty.setPropertyValue(df.isMandatoryField());
+                paramLst.add(isMandatoryFieldProperty);
+
+                ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                isReadableFieldProperty.setMultiple(false);
+                isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
+                isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                isReadableFieldProperty.setPropertyValue(df.isReadableField());
+                paramLst.add(isReadableFieldProperty);
+
+                ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                isWriteableFieldProperty.setMultiple(false);
+                isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
+                isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                isWriteableFieldProperty.setPropertyValue(df.isWriteableField());
+                paramLst.add(isWriteableFieldProperty);
+
+                dataFieldObj.addSubContentObject(df.getFieldName(), paramLst, false);
+            }
+
+            BaseContentObject stepsObj=activityObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, null, false);
+            Map<String,DataFieldDefinition[]> stepsExposedDataFields=bd.getActivityStepsExposedDataField();
+
+            if(stepsExposedDataFields!=null){
+                Set<String> stepNames=stepsExposedDataFields.keySet();
+                Iterator<String> stepNameItor=stepNames.iterator();
+                while(stepNameItor.hasNext()){
+                    String stepName=stepNameItor.next();
+                    if(!bd.containsExposedActivityStep(stepName)){
+                        throw new ActivityEngineDataException();
+                    }
+                    DataFieldDefinition[] dataFieldDefinArray=stepsExposedDataFields.get(stepName);
+                    BaseContentObject currentStepdfd=stepsObj.addSubContentObject(stepName, null, false);
+
+                    Map<String, String> stepRoleMap=bd.getActivityStepRoleMap();
+                    String roleOfCurrentStep=stepRoleMap.get(stepName);
+                    if(roleOfCurrentStep!=null){
+                        currentStepdfd.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, roleOfCurrentStep, false);
+                    }
+
+                    for(DataFieldDefinition df:dataFieldDefinArray){
+                        List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
+                        ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+                        fieldTypeProperty.setMultiple(false);
+                        fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+                        fieldTypeProperty.setPropertyType(PropertyType.LONG);
+                        fieldTypeProperty.setPropertyValue(new Long(df.getFieldType()));
+                        paramLst.add(fieldTypeProperty);
+
+                        ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+                        displayProperty.setMultiple(false);
+                        displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+                        displayProperty.setPropertyType(PropertyType.STRING);
+                        displayProperty.setPropertyValue(df.getDisplayName());
+                        paramLst.add(displayProperty);
+
+                        ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+                        descriptionProperty.setMultiple(false);
+                        descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+                        descriptionProperty.setPropertyType(PropertyType.STRING);
+                        descriptionProperty.setPropertyValue(df.getDescription());
+                        paramLst.add(descriptionProperty);
+
+                        ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                        isArrayFieldProperty.setMultiple(false);
+                        isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+                        isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                        isArrayFieldProperty.setPropertyValue(df.isArrayField());
+                        paramLst.add(isArrayFieldProperty);
+
+                        ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                        isSystemFieldProperty.setMultiple(false);
+                        isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+                        isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                        isSystemFieldProperty.setPropertyValue(df.isSystemField());
+                        paramLst.add(isSystemFieldProperty);
+
+                        ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                        isMandatoryFieldProperty.setMultiple(false);
+                        isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+                        isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                        isMandatoryFieldProperty.setPropertyValue(df.isMandatoryField());
+                        paramLst.add(isMandatoryFieldProperty);
+
+                        ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                        isReadableFieldProperty.setMultiple(false);
+                        isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
+                        isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                        isReadableFieldProperty.setPropertyValue(df.isReadableField());
+                        paramLst.add(isReadableFieldProperty);
+
+                        ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                        isWriteableFieldProperty.setMultiple(false);
+                        isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
+                        isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                        isWriteableFieldProperty.setPropertyValue(df.isWriteableField());
+                        paramLst.add(isWriteableFieldProperty);
+
+                        currentStepdfd.addSubContentObject(df.getFieldName(), paramLst, false);
+                    }
+                }
+            }
+
+            BaseContentObject launchPointMetaInfoObj=activityObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPoint, null, false);
+            BaseContentObject launchPointExposedDataFieldsObj=launchPointMetaInfoObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields, null, false);
+
+            DataFieldDefinition[] launchPointExposedDataFields=bd.getLaunchPointExposedDataFields();
+            if(launchPointExposedDataFields!=null){
+                for(DataFieldDefinition df:launchPointExposedDataFields){
+                	List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
+                    ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+                    fieldTypeProperty.setMultiple(false);
+                    fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+                    fieldTypeProperty.setPropertyType(PropertyType.LONG);
+                    fieldTypeProperty.setPropertyValue(new Long(df.getFieldType()));
+                    paramLst.add(fieldTypeProperty);
+
+                    ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+                    displayProperty.setMultiple(false);
+                    displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+                    displayProperty.setPropertyType(PropertyType.STRING);
+                    displayProperty.setPropertyValue(df.getDisplayName());
+                    paramLst.add(displayProperty);
+
+                    ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+                    descriptionProperty.setMultiple(false);
+                    descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+                    descriptionProperty.setPropertyType(PropertyType.STRING);
+                    descriptionProperty.setPropertyValue(df.getDescription());
+                    paramLst.add(descriptionProperty);
+
+                    ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isArrayFieldProperty.setMultiple(false);
+                    isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+                    isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isArrayFieldProperty.setPropertyValue(df.isArrayField());
+                    paramLst.add(isArrayFieldProperty);
+
+                    ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isSystemFieldProperty.setMultiple(false);
+                    isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+                    isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isSystemFieldProperty.setPropertyValue(df.isSystemField());
+                    paramLst.add(isSystemFieldProperty);
+
+                    ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isMandatoryFieldProperty.setMultiple(false);
+                    isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+                    isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isMandatoryFieldProperty.setPropertyValue(df.isMandatoryField());
+                    paramLst.add(isMandatoryFieldProperty);
+
+                    ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isReadableFieldProperty.setMultiple(false);
+                    isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
+                    isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isReadableFieldProperty.setPropertyValue(df.isReadableField());
+                    paramLst.add(isReadableFieldProperty);
+
+                    ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isWriteableFieldProperty.setMultiple(false);
+                    isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
+                    isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isWriteableFieldProperty.setPropertyValue(df.isWriteableField());
+                    paramLst.add(isWriteableFieldProperty);
+
+                    launchPointExposedDataFieldsObj.addSubContentObject(df.getFieldName(), paramLst, false);
+                }
+            }
+    	} catch (ContentReposityException e) {
+    		e.printStackTrace();
+    		throw new ActivityEngineRuntimeException();
+    	}	
     }
 
     private boolean verifyActivityData(ActivityData[] inputActivityData,DataFieldDefinition[] activityDataFieldArray){
@@ -2599,10 +3231,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     	 ProcessSpace targetProcessSpace;
          try {
              targetProcessSpace = ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
-             targetProcessSpace.suspendProcessByProcessObjectId(activityId);
-              
-             targetProcessSpace.closeProcessSpace();
-              return true;
+             return targetProcessSpace.suspendProcessByProcessObjectId(activityId);
          } catch (ProcessRepositoryRuntimeException e) {
              e.printStackTrace();
              throw new ActivityEngineProcessException();
@@ -2801,7 +3430,13 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	            throw new ActivityEngineActivityException();
 	        }
 	        else{
-	            BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+
+                BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
 	            if(dataFieldObj==null){
 	            	dataFieldObj=targetActivityDefineObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields, null, false);
 	            }
@@ -2903,7 +3538,13 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	            throw new ActivityEngineActivityException();
 	        }
 	        else{
-	            BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                
+                BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
 	            if(dataFieldObj==null){
 	            	throw new ActivityEngineActivityException();
 	            }
@@ -3006,6 +3647,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	            throw new ActivityEngineActivityException();
 	        }
 	        else{
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+	        	
 	            BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
 	            if(dataFieldObj==null){
 	            	throw new ActivityEngineActivityException();
@@ -3050,7 +3697,13 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	        if(targetActivityDefineObj==null){
 	            throw new ActivityEngineActivityException();
 	        }else{
-	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+
+                BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
 	        	if(stepsObj==null){
 	        		stepsObj=targetActivityDefineObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, null, false);
 	        	}
@@ -3114,6 +3767,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	        if(targetActivityDefineObj==null){
 	            throw new ActivityEngineActivityException();
 	        }else{
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                
 	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
 	        	if(stepsObj==null){
 	        		throw new ActivityEngineActivityException();
@@ -3175,6 +3834,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	        if(targetActivityDefineObj==null){
 	            throw new ActivityEngineActivityException();
 	        }else{
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+	        	
 	        	ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
 	        	if(exposedStepsProperty==null){
 	        		throw new ActivityEngineActivityException();
@@ -3302,6 +3967,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	        if(targetActivityDefineObj==null){
 	            throw new ActivityEngineActivityException();
 	        }else{
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                
 	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
 	        	if(stepsObj==null){
 	        		throw new ActivityEngineActivityException();
@@ -3388,6 +4059,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	        if(targetActivityDefineObj==null){
 	            throw new ActivityEngineActivityException();
 	        }else{
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                
 	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
 	        	if(stepsObj==null){
 	        		throw new ActivityEngineActivityException();
@@ -3476,7 +4153,13 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	        	newRoster.addActivityType(bd.getActivityType());
 	        }
 	        
-	        boolean isActive=bd.isEnabled();
+            ContentObjectProperty activityDefineMetaConfigVerProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
+            long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+            Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+            activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+            activityTypeDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+	        
+            boolean isActive=bd.isEnabled();
 	        ContentObjectProperty activityDefineStatusProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
 	        activityDefineStatusProperty.setPropertyValue(isActive);
 	        activityTypeDefineObj.updateProperty(activityDefineStatusProperty, false);
