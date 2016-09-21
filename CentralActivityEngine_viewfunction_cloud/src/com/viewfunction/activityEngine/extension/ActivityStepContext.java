@@ -77,7 +77,7 @@ public class ActivityStepContext extends ActivitiStepContextImpl{
 	}	
 	
 	public BusinessActivityDefinition getCurrentBusinessActivityDefinition() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
-		BusinessActivityDefinition currentBusinessActivityDefinition=getActivitySpace().getBusinessActivityDefinition(this.getProcessType());
+		BusinessActivityDefinition currentBusinessActivityDefinition=getActivitySpace().getActivityInstanceActivityDefinitionSnapshoot(this.getProcessType(), this.getProcessObjectId());
 		return currentBusinessActivityDefinition;
 	}
 	

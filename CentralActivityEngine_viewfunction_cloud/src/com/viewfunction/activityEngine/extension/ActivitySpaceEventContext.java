@@ -18,6 +18,7 @@ import com.viewfunction.processRepository.extension.ExtensionStepRuntimeInfo;
 import com.viewfunction.processRepository.extension.ProcessSpaceEventContext;
 import com.viewfunction.processRepository.processBureau.HistoricProcessStep;
 import com.viewfunction.processRepository.processBureau.ProcessObject;
+import com.viewfunction.processRepository.processBureau.ProcessStep;
 
 public class ActivitySpaceEventContext{
 	
@@ -59,8 +60,15 @@ public class ActivitySpaceEventContext{
 	}
 	
 	public BusinessActivityDefinition getAttachedBusinessActivityDefinition() throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
-		BusinessActivityDefinition currentBusinessActivityDefinition=getActivitySpace().getBusinessActivityDefinition(this.processSpaceEventContext.getProcessType());
-		return currentBusinessActivityDefinition;
+		ProcessObject currentProcessObject=this.processSpaceEventContext.getEventAttachedProcessObject();
+		if(currentProcessObject==null){
+			return null;
+		}else{
+			String activityType=this.processSpaceEventContext.getProcessType();
+			String activityId=currentProcessObject.getProcessObjectId();
+			BusinessActivityDefinition currentBusinessActivityDefinition=getActivitySpace().getActivityInstanceActivityDefinitionSnapshoot(activityType, activityId);
+			return currentBusinessActivityDefinition;
+		}
 	}
 	
 	public String getParticipantDocumentFolderPath(String participantName){
@@ -135,6 +143,7 @@ public class ActivitySpaceEventContext{
 							currentActivityStep=getActivitySpace().getFinishedActivityStepByStepInfo(this.processSpaceEventContext.getProcessType(), currentProcessObject.getProcessObjectId(), activityStepName);
 							break;
 					}
+					
 					CCR_CPRActivityStepImpl activityStepImpl=(CCR_CPRActivityStepImpl)currentActivityStep;
 					activityStepImpl.setStepAssignee(historicProcessStep.getStepAssignee());
 					activityStepImpl.setStepDefinitionKey(historicProcessStep.getStepDefinitionKey());
@@ -142,6 +151,19 @@ public class ActivitySpaceEventContext{
 					activityStepImpl.setStepCreateTime(historicProcessStep.getStartTime());
 					activityStepImpl.setBusinessActivity(getAttachedBusinessActivity());
 					activityStepList.add(currentActivityStep);
+					
+					if(historicProcessStep.hasParentStep()){
+						//this is a child task,need use parent task's StepDefinitionKey to get step data
+						//if this is a child task,the parent task must be a current running ProcessStep
+						String parentStepId=historicProcessStep.getParentStepId();
+						List<ProcessStep> currentProcessStepsList= currentProcessObject.getCurrentProcessSteps();
+						for(ProcessStep runningStep:currentProcessStepsList){
+							if(runningStep.getStepId().equals(parentStepId)){
+								activityStepImpl.setStepDefinitionKey(runningStep.getStepDefinitionKey());
+								break;
+							}
+						}
+					}	
 				}
 				return activityStepList;
 			}else{
