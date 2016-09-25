@@ -127,11 +127,14 @@ public class ActivityComponentFactory {
 				}
 			}
 			if(!alreadyInited){
-				ContentComponentFactory.createContentSpace(CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+				metaDataContentSpace=ContentComponentFactory.createContentSpace(CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+				metaDataContentSpace.closeContentSpace();
 			}			
 			activityCS=ContentComponentFactory.createContentSpace(activitySpaceName);
 			if(activityCS==null){
 				return null;
+			}else{
+				activityCS.closeContentSpace();
 			}				
 			//Need sleep more then 1 second to wait session sync data status.this is new change for Jackrabbit V3 OAK session management feature
 			try {
@@ -189,10 +192,13 @@ public class ActivityComponentFactory {
 		ContentSpace metaDataContentSpace = null;
 		ContentSpace activityCS=null;
 		try {			
-			ContentComponentFactory.createContentSpace(CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);			
+			metaDataContentSpace=ContentComponentFactory.createContentSpace(CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			metaDataContentSpace.closeContentSpace();
 			activityCS=ContentComponentFactory.createContentSpace(activitySpaceName);
 			if(activityCS==null){
 				return null;
+			}else{
+				activityCS.closeContentSpace();
 			}				
 			BUILDIN_ADMINISTRATOR_ACCOUNT = PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT);
 			BUILDIN_ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
