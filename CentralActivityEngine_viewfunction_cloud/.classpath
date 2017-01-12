@@ -64,38 +64,38 @@
 	<classpathentry kind="lib" path="crlib/poi-scratchpad-3.11.jar"/>
 	<classpathentry kind="lib" path="crlib/shared-all-0.9.18.jar"/>
 	<classpathentry kind="lib" path="crlib/tagsoup-1.2.1.jar"/>
-	<classpathentry kind="lib" path="crlib/tika-core-1.7.jar"/>
-	<classpathentry kind="lib" path="crlib/tika-parsers-1.7.jar"/>
 	<classpathentry kind="lib" path="crlib/vorbis-java-core-0.6.jar"/>
 	<classpathentry kind="lib" path="crlib/vorbis-java-tika-0.6.jar"/>
 	<classpathentry kind="lib" path="crlib/xmlbeans-2.6.0.jar"/>
 	<classpathentry kind="lib" path="crlib/xz-1.5.jar"/>
 	<classpathentry kind="lib" path="crlib/log4j-core-2.3.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-api-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-core-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-data-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-commons-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-rmi-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-server-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-servlet-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-spi-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-spi-commons-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/jackrabbit-webdav-2.12.4.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-auth-external-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-auth-ldap-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-authorization-cug-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-blob-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-blob-cloud-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-commons-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-core-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-http-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-jcr-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-lucene-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-remote-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-segment-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-solr-core-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-solr-osgi-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-tarmk-standby-1.4.7.jar"/>
-	<classpathentry kind="lib" path="crlib/oak-upgrade-1.4.7.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-api-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-core-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-data-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-commons-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-rmi-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-server-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-jcr-servlet-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-spi-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-spi-commons-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/jackrabbit-webdav-2.12.6.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-auth-external-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-auth-ldap-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-authorization-cug-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-blob-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-blob-cloud-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-commons-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-core-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-http-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-jcr-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-lucene-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-remote-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-segment-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-solr-core-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-solr-osgi-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-tarmk-standby-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/oak-upgrade-1.4.11.jar"/>
+	<classpathentry kind="lib" path="crlib/tika-core-1.9.jar"/>
+	<classpathentry kind="lib" path="crlib/tika-parsers-1.9.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -131,19 +131,19 @@ public class TestNG_ActivityStep_ParticipantTaskTestCase {
 		
 		DataFieldDefinition dfoperOnwer=ActivityComponentFactory.cteateDataFieldDefinition("operationOwner", PropertyType.STRING, false);
 		dfoperOnwer.setDescription("who was in charge for this operation");
-		dfoperOnwer.setDisplayName("业务经办人");
+		dfoperOnwer.setDisplayName("业锟今经帮拷锟斤拷");
 		dfoperOnwer.setMandatoryField(true);
 		dfoperOnwer.setSystemField(false);
 		
 		DataFieldDefinition dfoperCost=ActivityComponentFactory.cteateDataFieldDefinition("operationCost", PropertyType.DOUBLE, false);
 		dfoperCost.setDescription("The final cost of this operation");
-		dfoperCost.setDisplayName("业务最终花费");
+		dfoperCost.setDisplayName("业锟斤拷锟斤拷锟秸伙拷锟斤拷");
 		dfoperCost.setMandatoryField(true);
 		dfoperCost.setSystemField(false);
 		
 		DataFieldDefinition dfoperVerifyResult=ActivityComponentFactory.cteateDataFieldDefinition("operationVerfifyResult", PropertyType.BOOLEAN, false);
 		dfoperVerifyResult.setDescription("the result of operation verify");
-		dfoperVerifyResult.setDisplayName("业务花费评审结果");
+		dfoperVerifyResult.setDisplayName("业锟今花凤拷锟斤拷锟斤拷锟斤拷");
 		dfoperVerifyResult.setMandatoryField(true);
 		dfoperVerifyResult.setSystemField(false);		
 		
@@ -208,11 +208,11 @@ public class TestNG_ActivityStep_ParticipantTaskTestCase {
 		
 		Assert.assertEquals(ad_1Arr[0].getDataFieldDefinition().getFieldName(), "operationCost");
 		Assert.assertEquals(((Double)ad_1Arr[0].getDatFieldValue()).doubleValue(),1250.5);
-		Assert.assertEquals(ad_1Arr[0].getDataFieldDefinition().getDisplayName(), "业务最终花费");
+		Assert.assertEquals(ad_1Arr[0].getDataFieldDefinition().getDisplayName(), "业锟斤拷锟斤拷锟秸伙拷锟斤拷");
 		
 		Assert.assertEquals(ad_1Arr[1].getDataFieldDefinition().getFieldName(), "operationOwner");
 		Assert.assertEquals(ad_1Arr[1].getDatFieldValue().toString(),"KK The Great");
-		Assert.assertEquals(ad_1Arr[1].getDataFieldDefinition().getDisplayName(), "业务经办人");
+		Assert.assertEquals(ad_1Arr[1].getDataFieldDefinition().getDisplayName(), "业锟今经帮拷锟斤拷");
 		Assert.assertEquals(ad_1Arr[1].getDataFieldDefinition().getDescription(),"who was in charge for this operation");
 		Assert.assertEquals(ad_1Arr[1].getDataFieldDefinition().isArrayField(),false);
 		Assert.assertEquals(ad_1Arr[1].getDataFieldDefinition().isMandatoryField(),true);
@@ -235,15 +235,23 @@ public class TestNG_ActivityStep_ParticipantTaskTestCase {
 		ActivityData[] ad_2Arr=secondActivityStep.getActivityStepData();
 		Assert.assertTrue(ad_2Arr.length==3);
 		Assert.assertEquals(secondActivityStep.getActivityType(),"operationFinancialReport");
-		Assert.assertEquals(secondActivityStep.getActivityStepDefinitionKey(),"verifyReportTask");		
-		Assert.assertEquals(ad_2Arr[0].getDataFieldDefinition().getFieldName(), "operationVerfifyResult");
-		Assert.assertEquals(((Boolean)ad_2Arr[0].getDatFieldValue()).booleanValue(),true);
-		Assert.assertEquals(ad_2Arr[0].getDataFieldDefinition().getDisplayName(), "业务花费评审结果");
-		Assert.assertEquals(ad_2Arr[0].getDataFieldDefinition().getDescription(),"the result of operation verify");
-		Assert.assertEquals(ad_2Arr[0].getDataFieldDefinition().isArrayField(),false);
-		Assert.assertEquals(ad_2Arr[0].getDataFieldDefinition().isMandatoryField(),true);
-		Assert.assertEquals(ad_2Arr[0].getDataFieldDefinition().isSystemField(),false);
-		Assert.assertEquals(ad_2Arr[0].getDataFieldDefinition().getFieldType(), PropertyType.BOOLEAN);
+		Assert.assertEquals(secondActivityStep.getActivityStepDefinitionKey(),"verifyReportTask");	
+		boolean getMatchedField=false;
+		for(int i=0;i<ad_2Arr.length;i++){
+			if(ad_2Arr[i].getDataFieldDefinition().getFieldName().equals("operationVerfifyResult")){
+				getMatchedField=true;
+				Assert.assertEquals(ad_2Arr[i].getDataFieldDefinition().getFieldName(), "operationVerfifyResult");
+				Assert.assertEquals(((Boolean)ad_2Arr[i].getDatFieldValue()).booleanValue(),true);
+				Assert.assertEquals(ad_2Arr[i].getDataFieldDefinition().getDisplayName(), "业锟今花凤拷锟斤拷锟斤拷锟斤拷");
+				Assert.assertEquals(ad_2Arr[i].getDataFieldDefinition().getDescription(),"the result of operation verify");
+				Assert.assertEquals(ad_2Arr[i].getDataFieldDefinition().isArrayField(),false);
+				Assert.assertEquals(ad_2Arr[i].getDataFieldDefinition().isMandatoryField(),true);
+				Assert.assertEquals(ad_2Arr[i].getDataFieldDefinition().isSystemField(),false);
+				Assert.assertEquals(ad_2Arr[i].getDataFieldDefinition().getFieldType(), PropertyType.BOOLEAN);	
+			}
+		}
+		Assert.assertTrue(getMatchedField);
+		
 		secondActivityStep.handleActivityStep("Someone in managementTeam");
 		manTAcivityStepList=managementTeam_RoleQueue.fetchActivitySteps();
 		Assert.assertEquals(manTAcivityStepList.size(),manActivitySttpNumber-1);
