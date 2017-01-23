@@ -45,6 +45,7 @@ public class CCR_CPRParticipantImpl implements Serializable,Participant{
 	private String activitySpaceName;
 	private String participantName;
 	private String participantType;
+	private ContentSpace passedInContentSpace;
 
 	public CCR_CPRParticipantImpl(String participantName,String participantType,String activitySpaceName){
 		this.participantName=participantName;		
@@ -102,53 +103,66 @@ public class CCR_CPRParticipantImpl implements Serializable,Participant{
 
 	@Override
 	public Role[] getRoles() throws ActivityEngineRuntimeException {
-		try {
-			initContentRepositoryParameter();
-		} catch (ContentReposityRuntimeException e) {			
-			e.printStackTrace();
-			throw new ActivityEngineRuntimeException();	
+		if(getPassedInContentSpace()!=null){
+			return doGetRoles(getPassedInContentSpace());
+		}else{
+			try {
+				initContentRepositoryParameter();
+			} catch (ContentReposityRuntimeException e) {
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+			}
+			ContentSpace metaDataContentSpace = null;
+			try {
+				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+				return doGetRoles(metaDataContentSpace);
+			} catch (ContentReposityException e) {
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+			}finally{
+				metaDataContentSpace.closeContentSpace();
+			}
 		}
-		ContentSpace metaDataContentSpace = null;		
+	}
+
+	private Role[] doGetRoles(ContentSpace targetContentSpace) throws ActivityEngineRuntimeException{
 		try {
-			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			RootContentObject activitySpaceDefineObject=targetContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
 			if(activitySpaceDefineObject==null){
 				throw new ActivityEngineRuntimeException();
 			}
 			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
 			if(activitySpaceBco==null){
 				throw new ActivityEngineRuntimeException();
-			}			
+			}
 			BaseContentObject belongedRoleContainerObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Participant)
-					.getSubContentObject(this.participantName).getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Participant_belongedRoleContainer);						
+					.getSubContentObject(this.participantName).getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Participant_belongedRoleContainer);
 			if(belongedRoleContainerObj.getSubContentObjectsCount()==0){
 				return null;
 			}else{
-				Role[] roleArray=new Role[new Long(belongedRoleContainerObj.getSubContentObjectsCount()).intValue()];				
+				Role[] roleArray=new Role[new Long(belongedRoleContainerObj.getSubContentObjectsCount()).intValue()];
 				List<BaseContentObject> roleList=belongedRoleContainerObj.getSubContentObjects(null);
-				BaseContentObject currentRoleNameObj=null;	
+				BaseContentObject currentRoleNameObj=null;
 				BaseContentObject currentRoleObject=null;
 				for(int i=0;i<roleList.size();i++){
-					currentRoleNameObj=roleList.get(i);											
-					Role currentRole=ActivityComponentFactory.createRole(activitySpaceName, currentRoleNameObj.getContentObjectName());					
-					currentRoleObject=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Role).getSubContentObject(currentRoleNameObj.getContentObjectName());					
+					currentRoleNameObj=roleList.get(i);
+					Role currentRole=ActivityComponentFactory.createRole(activitySpaceName, currentRoleNameObj.getContentObjectName());
+					currentRoleObject=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_Role).getSubContentObject(currentRoleNameObj.getContentObjectName());
 					if(currentRoleObject.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_Role_desc)!=null){
-						currentRole.setDescription(currentRoleObject.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_Role_desc).getPropertyValue().toString());						
+						currentRole.setDescription(currentRoleObject.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_Role_desc).getPropertyValue().toString());
 					}
 					if(currentRoleObject.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_Role_displayName)!=null){
-						currentRole.setDisplayName(currentRoleObject.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_Role_displayName).getPropertyValue().toString());						
+						currentRole.setDisplayName(currentRoleObject.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_Role_displayName).getPropertyValue().toString());
 					}
 					roleArray[i]=currentRole;
-				}				
-				return roleArray;				
-			}		
-		} catch (ContentReposityException e) {			
+				}
+				return roleArray;
+			}
+		} catch (ContentReposityException e) {
 			e.printStackTrace();
 			throw new ActivityEngineRuntimeException();
-		}finally{
-			metaDataContentSpace.closeContentSpace();			
-		}	
+		}
 	}
 	
 	@Override
@@ -631,5 +645,13 @@ public class CCR_CPRParticipantImpl implements Serializable,Participant{
 	public String getDocumentsFolderPath() {
 		String participantFolderFullPath="/"+CCRActivityEngineConstant.ACTIVITYSPACE_ContentStore+"/"+CCRActivityEngineConstant.ACTIVITYSPACE_ParticipantContentStore+"/"+this.participantName+"/";
 		return participantFolderFullPath;
+	}
+
+	private ContentSpace getPassedInContentSpace() {
+		return passedInContentSpace;
+	}
+
+	public void setPassedInContentSpace(ContentSpace passedInContentSpace) {
+		this.passedInContentSpace = passedInContentSpace;
 	}
 }

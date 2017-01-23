@@ -36,6 +36,7 @@ public class CCRRoleImpl implements Serializable,Role{
 	private String roleName;
 	private String description;
 	private String displayName;
+	private ContentSpace passedInContentSpace;
 	
 	private void initContentRepositoryParameter() throws ContentReposityRuntimeException{
 		if(BUILDIN_ADMINISTRATOR_ACCOUNT==null){
@@ -83,17 +84,32 @@ public class CCRRoleImpl implements Serializable,Role{
 
 	@Override
 	public boolean addParticipant(String participantName) throws ActivityEngineRuntimeException {
-		try {
-			initContentRepositoryParameter();
-		} catch (ContentReposityRuntimeException e) {			
-			e.printStackTrace();
-			throw new ActivityEngineRuntimeException();	
+		if(getPassedInContentSpace()!=null){
+			return doAddParticipant(getPassedInContentSpace(),participantName);
+		}else{
+			try {
+				initContentRepositoryParameter();
+			} catch (ContentReposityRuntimeException e) {			
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();	
+			}
+			ContentSpace metaDataContentSpace = null;
+			try {
+				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+				return doAddParticipant(metaDataContentSpace,participantName);				
+			} catch (ContentReposityException e) {			
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+			}finally{
+				metaDataContentSpace.closeContentSpace();			
+			}
 		}
-		ContentSpace metaDataContentSpace = null;
-		try {
-			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);			
-			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+	}
+	
+	private boolean doAddParticipant(ContentSpace targetContentSpace,String participantName) throws ActivityEngineRuntimeException{		
+		try {					
+			RootContentObject activitySpaceDefineObject=targetContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
 			if(activitySpaceDefineObject==null){
 				throw new ActivityEngineRuntimeException();
 			}			
@@ -122,24 +138,37 @@ public class CCRRoleImpl implements Serializable,Role{
 		} catch (ContentReposityException e) {			
 			e.printStackTrace();
 			throw new ActivityEngineRuntimeException();
-		}finally{
-			metaDataContentSpace.closeContentSpace();			
 		}		
 	}
 
 	@Override
 	public boolean removeParticipant(String participantName) throws ActivityEngineRuntimeException {
-		try {
-			initContentRepositoryParameter();
-		} catch (ContentReposityRuntimeException e) {			
-			e.printStackTrace();
-			throw new ActivityEngineRuntimeException();	
-		}
-		ContentSpace metaDataContentSpace = null;
-		try {
-			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);			
-			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+		if(getPassedInContentSpace()!=null){
+			return doRemoveParticipant(getPassedInContentSpace(),participantName);
+		}else{			
+			try {
+				initContentRepositoryParameter();
+			} catch (ContentReposityRuntimeException e) {			
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();	
+			}
+			ContentSpace metaDataContentSpace = null;
+			try {
+				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);				
+				return doRemoveParticipant(metaDataContentSpace,participantName);	
+			} catch (ContentReposityException e) {			
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+			}finally{
+				metaDataContentSpace.closeContentSpace();			
+			}
+		}		
+	}
+	
+	private boolean doRemoveParticipant(ContentSpace targetContentSpace,String participantName) throws ActivityEngineRuntimeException{		
+		try {					
+			RootContentObject activitySpaceDefineObject=targetContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
 			if(activitySpaceDefineObject==null){
 				throw new ActivityEngineRuntimeException();
 			}			
@@ -169,9 +198,7 @@ public class CCRRoleImpl implements Serializable,Role{
 		} catch (ContentReposityException e) {			
 			e.printStackTrace();
 			throw new ActivityEngineRuntimeException();
-		}finally{
-			metaDataContentSpace.closeContentSpace();			
-		}
+		}		
 	}
 
 	@Override
@@ -829,5 +856,13 @@ public class CCRRoleImpl implements Serializable,Role{
 	public String getDocumentsFolderPath() {
 		String roleFolderFullPath="/"+CCRActivityEngineConstant.ACTIVITYSPACE_ContentStore+"/"+CCRActivityEngineConstant.ACTIVITYSPACE_RoleContentStore+"/"+this.roleName+"/";
 		return roleFolderFullPath;
+	}
+
+	private ContentSpace getPassedInContentSpace() {
+		return passedInContentSpace;
+	}
+
+	public void setPassedInContentSpace(ContentSpace passedInContentSpace) {
+		this.passedInContentSpace = passedInContentSpace;
 	}
 }

@@ -8,11 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.jcr.PropertyType;
 
@@ -35,6 +31,8 @@ import com.viewfunction.activityEngine.extension.ActivityEventType;
 import com.viewfunction.activityEngine.extension.ActivitySpaceEventListener;
 import com.viewfunction.activityEngine.security.Participant;
 import com.viewfunction.activityEngine.security.Role;
+import com.viewfunction.activityEngine.securityImpl.CCRRoleImpl;
+import com.viewfunction.activityEngine.securityImpl.CCR_CPRParticipantImpl;
 import com.viewfunction.activityEngine.util.factory.ActivityComponentFactory;
 
 import com.viewfunction.contentRepository.contentBureau.BaseContentObject;
@@ -390,7 +388,18 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         try {
             metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
                     CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            return doGetRole(metaDataContentSpace,roleName);
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
+
+    private Role doGetRole(ContentSpace targetContentSpace,String roleName) throws ActivityEngineRuntimeException{
+        try {
+            RootContentObject activitySpaceDefineObject=targetContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
             if(activitySpaceDefineObject==null){
                 throw new ActivityEngineRuntimeException();
             }
@@ -415,8 +424,6 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         } catch (ContentReposityException e) {
             e.printStackTrace();
             throw new ActivityEngineRuntimeException();
-        }finally{
-            metaDataContentSpace.closeContentSpace();
         }
     }
 
@@ -711,16 +718,22 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 }
                 Participant newParticipant=ActivityComponentFactory.createParticipant(participantName,participantNewType,activitySpaceName);
                 newParticipant.setDisplayName(participantNewDisplayName);
+                //use setPassedInContentSpace to avoid two ContentSpace dead lock which leads to bad performance
+                ((CCR_CPRParticipantImpl)newParticipant).setPassedInContentSpace(metaDataContentSpace);
                 Role[] orginalRoleArray=newParticipant.getRoles();
                 if(orginalRoleArray!=null){
                     for(Role role:orginalRoleArray){
+                        //use setPassedInContentSpace to avoid two ContentSpace dead lock which leads to bad performance
+                        ((CCRRoleImpl)role).setPassedInContentSpace(metaDataContentSpace);
                         role.removeParticipant(participantName);
                     }
                 }
                 if(roles!=null){
                     Role newRole=null;
                     for(String roleName:roles){
-                        newRole=this.getRole(roleName);
+                        newRole=this.doGetRole(metaDataContentSpace,roleName);
+                        //use setPassedInContentSpace to avoid two ContentSpace dead lock which leads to bad performance
+                        ((CCRRoleImpl)newRole).setPassedInContentSpace(metaDataContentSpace);
                         newRole.addParticipant(participantName);
                     }
                 }
@@ -862,14 +875,14 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 throw new ActivityEngineActivityException();
             }else{
                 List<ContentObjectProperty> defineParamLst=new ArrayList<ContentObjectProperty>();
-                
+
                 ContentObjectProperty activityDefineMetaConfigVerProperty=ContentComponentFactory.createContentObjectProperty();
                 activityDefineMetaConfigVerProperty.setMultiple(false);
                 activityDefineMetaConfigVerProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 activityDefineMetaConfigVerProperty.setPropertyType(PropertyType.LONG);
                 activityDefineMetaConfigVerProperty.setPropertyValue(new Long(1));
                 defineParamLst.add(activityDefineMetaConfigVerProperty);
-                
+
                 ContentObjectProperty activityDefineStatusProperty=ContentComponentFactory.createContentObjectProperty();
                 activityDefineStatusProperty.setMultiple(false);
                 activityDefineStatusProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
@@ -1294,7 +1307,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             metaDataContentSpace.closeContentSpace();
         }
     }
-    
+
     @Override
     public boolean updateBusinessActivityDefinition(BusinessActivityDefinition bd) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException, ActivityEngineProcessException {
         try {
@@ -1330,11 +1343,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 List<ContentObjectProperty> orginalPropertes=activityObj.getProperties();
                 long newMetaConfigVersion=0;
                 for(ContentObjectProperty contentObjectProperty:orginalPropertes){
-                	if(contentObjectProperty.getPropertyName().equals(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion)){
-                		Long currentVersion=(Long)contentObjectProperty.getPropertyValue();
-                		newMetaConfigVersion=currentVersion+1;
-                	}
-                	activityObj.removeProperty(contentObjectProperty.getPropertyName(), false);
+                    if(contentObjectProperty.getPropertyName().equals(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion)){
+                        Long currentVersion=(Long)contentObjectProperty.getPropertyValue();
+                        newMetaConfigVersion=currentVersion+1;
+                    }
+                    activityObj.removeProperty(contentObjectProperty.getPropertyName(), false);
                 }
                 activityObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields, false);
                 activityObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, false);
@@ -1345,21 +1358,21 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 }
 
                 List<ContentObjectProperty> defineParamLst=new ArrayList<ContentObjectProperty>();
-                
+
                 ContentObjectProperty activityDefineMetaConfigVerProperty=ContentComponentFactory.createContentObjectProperty();
                 activityDefineMetaConfigVerProperty.setMultiple(false);
                 activityDefineMetaConfigVerProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 activityDefineMetaConfigVerProperty.setPropertyType(PropertyType.LONG);
                 activityDefineMetaConfigVerProperty.setPropertyValue(new Long(newMetaConfigVersion));
                 defineParamLst.add(activityDefineMetaConfigVerProperty);
-                
+
                 ContentObjectProperty activityDefineStatusProperty=ContentComponentFactory.createContentObjectProperty();
                 activityDefineStatusProperty.setMultiple(false);
                 activityDefineStatusProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
                 activityDefineStatusProperty.setPropertyType(PropertyType.BOOLEAN);
                 activityDefineStatusProperty.setPropertyValue(true);
                 defineParamLst.add(activityDefineStatusProperty);
-                
+
                 ContentObjectProperty exposedStepsProperty=ContentComponentFactory.createContentObjectProperty();
                 exposedStepsProperty.setMultiple(true);
                 exposedStepsProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
@@ -1926,7 +1939,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 
                 long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
                 ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
-                
+
                 boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
                 ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
                 ContentObjectProperty rosterPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_belongsToRoster);
@@ -2124,124 +2137,124 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     }
 
     public BusinessActivityDefinition getActivityInstanceActivityDefinitionSnapshoot(String activityType,String activityId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
-    	try {
-			initContentRepositoryParameter();
-		} catch (ContentReposityRuntimeException e) {			
-			e.printStackTrace();
-			throw new ActivityEngineRuntimeException();	
-		}
-    	ContentSpace activityContentSpace = null;
-		try {
-			activityContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, this.activitySpaceName);
-			RootContentObject activityTypeRootObject=activityContentSpace.getRootContentObject(activityType);			
-			if(activityTypeRootObject==null){
-				throw new  ActivityEngineDataException();								
-			}
-			BaseContentObject activityInstanceObj=activityTypeRootObject.getSubContentObject(activityId);
-			if(activityInstanceObj==null){
-				throw new  ActivityEngineDataException();
-			}
-			BaseContentObject activityInstanceDefinitionSnapshootObj=activityInstanceObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_relatedActivityTypeDefinitionSnapshoot);	
-			if(activityInstanceDefinitionSnapshootObj!=null){
-				BaseContentObject activityInstanceDefinitionObj=activityInstanceDefinitionSnapshootObj.getSubContentObject(activityType);
-				if(activityInstanceDefinitionObj!=null){
-					BaseContentObject targetActivityDefineObj=activityInstanceDefinitionObj;
-					BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
-	                long dataFieldDefineNum=dataFieldObj.getSubContentObjectsCount();
-	                List<BaseContentObject> dataFieldDefineObjList=dataFieldObj.getSubContentObjects(null);
-	                DataFieldDefinition[] dfdArray=new DataFieldDefinition[(int)dataFieldDefineNum];
-	                for(int i=0;i<dataFieldDefineObjList.size();i++){
-	                    BaseContentObject dataFieldDefin=dataFieldDefineObjList.get(i);
-	                    int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
-	                    String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
-	                    String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
-	                    boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
-	                    boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
-	                    boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
-	                    boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
-	                    boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace activityContentSpace = null;
+        try {
+            activityContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, this.activitySpaceName);
+            RootContentObject activityTypeRootObject=activityContentSpace.getRootContentObject(activityType);
+            if(activityTypeRootObject==null){
+                throw new  ActivityEngineDataException();
+            }
+            BaseContentObject activityInstanceObj=activityTypeRootObject.getSubContentObject(activityId);
+            if(activityInstanceObj==null){
+                throw new  ActivityEngineDataException();
+            }
+            BaseContentObject activityInstanceDefinitionSnapshootObj=activityInstanceObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityInstanceDefinition_relatedActivityTypeDefinitionSnapshoot);
+            if(activityInstanceDefinitionSnapshootObj!=null){
+                BaseContentObject activityInstanceDefinitionObj=activityInstanceDefinitionSnapshootObj.getSubContentObject(activityType);
+                if(activityInstanceDefinitionObj!=null){
+                    BaseContentObject targetActivityDefineObj=activityInstanceDefinitionObj;
+                    BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
+                    long dataFieldDefineNum=dataFieldObj.getSubContentObjectsCount();
+                    List<BaseContentObject> dataFieldDefineObjList=dataFieldObj.getSubContentObjects(null);
+                    DataFieldDefinition[] dfdArray=new DataFieldDefinition[(int)dataFieldDefineNum];
+                    for(int i=0;i<dataFieldDefineObjList.size();i++){
+                        BaseContentObject dataFieldDefin=dataFieldDefineObjList.get(i);
+                        int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
+                        String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
+                        String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
+                        boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
+                        boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
+                        boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
+                        boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
+                        boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
 
-	                    DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
-	                    dfd.setDescription(activityDefineDesc);
-	                    dfd.setDisplayName(activityDefineDisplayName);
-	                    dfd.setMandatoryField(activityDefineIsMandatoryField);
-	                    dfd.setSystemField(activityDefineIsSystemField);
-	                    dfd.setReadableField(activityDefineIsReadableField);
-	                    dfd.setWriteableField(activityDefineIsWriteableField);
-	                    dfdArray[i]=dfd;
-	                }
-	                BusinessActivityDefinition bsd=ActivityComponentFactory.createBusinessActivityDefinition(targetActivityDefineObj.getContentObjectName(), this.activitySpaceName,null);
-	                bsd.setActivityDataFields(dfdArray);
-	                
-	                long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
-	                ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
-	                
-	                boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
-	                ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
-	                ContentObjectProperty rosterPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_belongsToRoster);
-	                if(rosterPro!=null){
-	                    String rosterName= rosterPro.getPropertyValue().toString();
-	                    ((CCRBusinessActivityDefinitionImpl)bsd).setRosterName(rosterName);
-	                }
-	                
-	                ContentObjectProperty launchDecisionPointAttrPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName);
-	                if(launchDecisionPointAttrPro!=null){
-	                    String decisionPointAttrName=launchDecisionPointAttrPro.getPropertyValue().toString();
-	                    bsd.setLaunchDecisionPointAttributeName(decisionPointAttrName);
-	                }
+                        DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
+                        dfd.setDescription(activityDefineDesc);
+                        dfd.setDisplayName(activityDefineDisplayName);
+                        dfd.setMandatoryField(activityDefineIsMandatoryField);
+                        dfd.setSystemField(activityDefineIsSystemField);
+                        dfd.setReadableField(activityDefineIsReadableField);
+                        dfd.setWriteableField(activityDefineIsWriteableField);
+                        dfdArray[i]=dfd;
+                    }
+                    BusinessActivityDefinition bsd=ActivityComponentFactory.createBusinessActivityDefinition(targetActivityDefineObj.getContentObjectName(), this.activitySpaceName,null);
+                    bsd.setActivityDataFields(dfdArray);
 
-	                ContentObjectProperty launchDecisionPointChoiseListPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList);
-	                if(launchDecisionPointChoiseListPro!=null){
-	                    String[] decisionPointOptionList;
-	                    if(launchDecisionPointChoiseListPro.isMultiple()){
-	                        decisionPointOptionList=(String[])launchDecisionPointChoiseListPro.getPropertyValue();
-	                    }else{
-	                        decisionPointOptionList=new String[1];
-	                        decisionPointOptionList[0]=launchDecisionPointChoiseListPro.getPropertyValue().toString();
-	                    }
-	                    bsd.setLaunchDecisionPointChoiseList(decisionPointOptionList);
-	                }
+                    long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
+                    ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
 
-	                ContentObjectProperty launchUserIdentityAttrPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName);
-	                if(launchUserIdentityAttrPro!=null){
-	                    String launchUserIdentityAttrName=launchUserIdentityAttrPro.getPropertyValue().toString();
-	                    bsd.setLaunchUserIdentityAttributeName(launchUserIdentityAttrName);
-	                }
+                    boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
+                    ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
+                    ContentObjectProperty rosterPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_belongsToRoster);
+                    if(rosterPro!=null){
+                        String rosterName= rosterPro.getPropertyValue().toString();
+                        ((CCRBusinessActivityDefinitionImpl)bsd).setRosterName(rosterName);
+                    }
 
-	                ContentObjectProperty launchProcessVariableListPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList);
-	                if(launchProcessVariableListPro!=null){
-	                    String[] launchProcessVariableList;
-	                    if(launchProcessVariableListPro.isMultiple()){
-	                        launchProcessVariableList=(String[])launchProcessVariableListPro.getPropertyValue();
-	                    }else{
-	                        launchProcessVariableList=new String[1];
-	                        launchProcessVariableList[0]=launchProcessVariableListPro.getPropertyValue().toString();
-	                    }
-	                    bsd.setLaunchProcessVariableList(launchProcessVariableList);
-	                }
+                    ContentObjectProperty launchDecisionPointAttrPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName);
+                    if(launchDecisionPointAttrPro!=null){
+                        String decisionPointAttrName=launchDecisionPointAttrPro.getPropertyValue().toString();
+                        bsd.setLaunchDecisionPointAttributeName(decisionPointAttrName);
+                    }
 
-	                String[] exposedSteps=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps).getPropertyValue());
-	                bsd.setExposedSteps(exposedSteps);
+                    ContentObjectProperty launchDecisionPointChoiseListPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList);
+                    if(launchDecisionPointChoiseListPro!=null){
+                        String[] decisionPointOptionList;
+                        if(launchDecisionPointChoiseListPro.isMultiple()){
+                            decisionPointOptionList=(String[])launchDecisionPointChoiseListPro.getPropertyValue();
+                        }else{
+                            decisionPointOptionList=new String[1];
+                            decisionPointOptionList[0]=launchDecisionPointChoiseListPro.getPropertyValue().toString();
+                        }
+                        bsd.setLaunchDecisionPointChoiseList(decisionPointOptionList);
+                    }
 
-	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles)!=null){
-	                    String[] launchRolesList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles).getPropertyValue());
-	                    bsd.setActivityLaunchRoles(launchRolesList);
-	                }
+                    ContentObjectProperty launchUserIdentityAttrPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName);
+                    if(launchUserIdentityAttrPro!=null){
+                        String launchUserIdentityAttrName=launchUserIdentityAttrPro.getPropertyValue().toString();
+                        bsd.setLaunchUserIdentityAttributeName(launchUserIdentityAttrName);
+                    }
 
-	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants)!=null){
-	                    String[] launchParticipantsList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants).getPropertyValue());
-	                    bsd.setActivityLaunchParticipants(launchParticipantsList);
-	                }
+                    ContentObjectProperty launchProcessVariableListPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList);
+                    if(launchProcessVariableListPro!=null){
+                        String[] launchProcessVariableList;
+                        if(launchProcessVariableListPro.isMultiple()){
+                            launchProcessVariableList=(String[])launchProcessVariableListPro.getPropertyValue();
+                        }else{
+                            launchProcessVariableList=new String[1];
+                            launchProcessVariableList[0]=launchProcessVariableListPro.getPropertyValue().toString();
+                        }
+                        bsd.setLaunchProcessVariableList(launchProcessVariableList);
+                    }
 
-	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories)!=null){
-	                    String[] activityCategoriesList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories).getPropertyValue());
-	                    bsd.setActivityCategories(activityCategoriesList);
-	                }
+                    String[] exposedSteps=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps).getPropertyValue());
+                    bsd.setExposedSteps(exposedSteps);
 
-	                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description)!=null){
-	                    String activityDescription=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description).getPropertyValue().toString();
-	                    bsd.setActivityDescription(activityDescription);
-	                }
+                    if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles)!=null){
+                        String[] launchRolesList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles).getPropertyValue());
+                        bsd.setActivityLaunchRoles(launchRolesList);
+                    }
+
+                    if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants)!=null){
+                        String[] launchParticipantsList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants).getPropertyValue());
+                        bsd.setActivityLaunchParticipants(launchParticipantsList);
+                    }
+
+                    if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories)!=null){
+                        String[] activityCategoriesList=(String[])(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories).getPropertyValue());
+                        bsd.setActivityCategories(activityCategoriesList);
+                    }
+
+                    if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description)!=null){
+                        String activityDescription=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description).getPropertyValue().toString();
+                        bsd.setActivityDescription(activityDescription);
+                    }
 
 	                /* not include definition resource file in activity instance level
 	                BaseContentObject defineResourceObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_definitionResource);
@@ -2254,129 +2267,129 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	                    System.out.println("ERROR: activityDefinition XML is miss["+activityType+"]");
 	                }
 	                */
-	                
-	                BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
-	                if(stepsObj!=null){
-	                    List<BaseContentObject> stepDataFieldDefineObjList=stepsObj.getSubContentObjects(null);
-	                    for(BaseContentObject stepDefinObj:stepDataFieldDefineObjList){
-	                        String stepName=stepDefinObj.getContentObjectName();
 
-	                        ContentObjectProperty roleProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole);
-	                        if(roleProperty!=null){
-	                            try {
-	                                bsd.setActivityStepRelatedRole(stepName, roleProperty.getPropertyValue().toString());
-	                            } catch (ActivityEngineProcessException e) {
-	                                e.printStackTrace();
-	                                throw new ActivityEngineActivityException();
-	                            }
-	                        }
+                    BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+                    if(stepsObj!=null){
+                        List<BaseContentObject> stepDataFieldDefineObjList=stepsObj.getSubContentObjects(null);
+                        for(BaseContentObject stepDefinObj:stepDataFieldDefineObjList){
+                            String stepName=stepDefinObj.getContentObjectName();
 
-	                        ContentObjectProperty stepDecisionPointAttrPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName);
-	                        if(stepDecisionPointAttrPro!=null){
-	                            String decisionPointAttrName=stepDecisionPointAttrPro.getPropertyValue().toString();
-	                            bsd.setStepDecisionPointAttributeName(stepDefinObj.getContentObjectName(), decisionPointAttrName);
-	                        }
+                            ContentObjectProperty roleProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole);
+                            if(roleProperty!=null){
+                                try {
+                                    bsd.setActivityStepRelatedRole(stepName, roleProperty.getPropertyValue().toString());
+                                } catch (ActivityEngineProcessException e) {
+                                    e.printStackTrace();
+                                    throw new ActivityEngineActivityException();
+                                }
+                            }
 
-	                        ContentObjectProperty stepDecisionPointChoiseListPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList);
-	                        if(stepDecisionPointChoiseListPro!=null){
-	                            String[] decisionPointOptionList;
-	                            if(stepDecisionPointChoiseListPro.isMultiple()){
-	                                decisionPointOptionList=(String[])stepDecisionPointChoiseListPro.getPropertyValue();
-	                            }else{
-	                                decisionPointOptionList=new String[1];
-	                                decisionPointOptionList[0]=stepDecisionPointChoiseListPro.getPropertyValue().toString();
-	                            }
-	                            bsd.setStepDecisionPointChoiseList(stepDefinObj.getContentObjectName(), decisionPointOptionList);
-	                        }
+                            ContentObjectProperty stepDecisionPointAttrPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName);
+                            if(stepDecisionPointAttrPro!=null){
+                                String decisionPointAttrName=stepDecisionPointAttrPro.getPropertyValue().toString();
+                                bsd.setStepDecisionPointAttributeName(stepDefinObj.getContentObjectName(), decisionPointAttrName);
+                            }
 
-	                        ContentObjectProperty stepProcessVariableListPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList);
-	                        if(stepProcessVariableListPro!=null){
-	                            String[] stepProcessVariableList;
-	                            if(stepProcessVariableListPro.isMultiple()){
-	                                stepProcessVariableList=(String[])stepProcessVariableListPro.getPropertyValue();
-	                            }else{
-	                                stepProcessVariableList=new String[1];
-	                                stepProcessVariableList[0]=stepProcessVariableListPro.getPropertyValue().toString();
-	                            }
-	                            bsd.setStepProcessVariableList(stepDefinObj.getContentObjectName(), stepProcessVariableList);
-	                        }
+                            ContentObjectProperty stepDecisionPointChoiseListPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList);
+                            if(stepDecisionPointChoiseListPro!=null){
+                                String[] decisionPointOptionList;
+                                if(stepDecisionPointChoiseListPro.isMultiple()){
+                                    decisionPointOptionList=(String[])stepDecisionPointChoiseListPro.getPropertyValue();
+                                }else{
+                                    decisionPointOptionList=new String[1];
+                                    decisionPointOptionList[0]=stepDecisionPointChoiseListPro.getPropertyValue().toString();
+                                }
+                                bsd.setStepDecisionPointChoiseList(stepDefinObj.getContentObjectName(), decisionPointOptionList);
+                            }
 
-	                        ContentObjectProperty stepUserIdentityAttrPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName);
-	                        if(stepUserIdentityAttrPro!=null){
-	                            String stepUserIdentityAttrName=stepUserIdentityAttrPro.getPropertyValue().toString();
-	                            bsd.setStepUserIdentityAttributeName(stepDefinObj.getContentObjectName(), stepUserIdentityAttrName);
-	                        }
+                            ContentObjectProperty stepProcessVariableListPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList);
+                            if(stepProcessVariableListPro!=null){
+                                String[] stepProcessVariableList;
+                                if(stepProcessVariableListPro.isMultiple()){
+                                    stepProcessVariableList=(String[])stepProcessVariableListPro.getPropertyValue();
+                                }else{
+                                    stepProcessVariableList=new String[1];
+                                    stepProcessVariableList[0]=stepProcessVariableListPro.getPropertyValue().toString();
+                                }
+                                bsd.setStepProcessVariableList(stepDefinObj.getContentObjectName(), stepProcessVariableList);
+                            }
 
-	                        List<BaseContentObject> stepDataFieldDefObj=stepDefinObj.getSubContentObjects(null);
-	                        DataFieldDefinition[] stepDfdArray=new DataFieldDefinition[stepDataFieldDefObj.size()];
-	                        for(int i=0;i<stepDataFieldDefObj.size();i++){
-	                            BaseContentObject dataFieldDefin=stepDataFieldDefObj.get(i);
-	                            int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
-	                            String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
-	                            String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
-	                            boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
-	                            boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
-	                            boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
-	                            boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
-	                            boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
+                            ContentObjectProperty stepUserIdentityAttrPro=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName);
+                            if(stepUserIdentityAttrPro!=null){
+                                String stepUserIdentityAttrName=stepUserIdentityAttrPro.getPropertyValue().toString();
+                                bsd.setStepUserIdentityAttributeName(stepDefinObj.getContentObjectName(), stepUserIdentityAttrName);
+                            }
 
-	                            DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
-	                            dfd.setDescription(activityDefineDesc);
-	                            dfd.setDisplayName(activityDefineDisplayName);
-	                            dfd.setMandatoryField(activityDefineIsMandatoryField);
-	                            dfd.setSystemField(activityDefineIsSystemField);
-	                            dfd.setReadableField(activityDefineIsReadableField);
-	                            dfd.setWriteableField(activityDefineIsWriteableField);
-	                            stepDfdArray[i]=dfd;
-	                        }
-	                        bsd.setActivityStepExposedDataFields(stepName, stepDfdArray);
-	                    }
-	                }else{
-	                    //throw new ActivityEngineActivityException();
-	                    System.out.println("ERROR: activityDefinition Step Data is miss["+activityType+"]");
-	                }
+                            List<BaseContentObject> stepDataFieldDefObj=stepDefinObj.getSubContentObjects(null);
+                            DataFieldDefinition[] stepDfdArray=new DataFieldDefinition[stepDataFieldDefObj.size()];
+                            for(int i=0;i<stepDataFieldDefObj.size();i++){
+                                BaseContentObject dataFieldDefin=stepDataFieldDefObj.get(i);
+                                int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
+                                String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
+                                String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
+                                boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
+                                boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
+                                boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
+                                boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
+                                boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
 
-	                BaseContentObject activityLaunchPointMeteObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPoint);
-	                if(activityLaunchPointMeteObj!=null){
-	                    BaseContentObject activityLaunchpointDataFieldsObject=activityLaunchPointMeteObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields);
-	                    if(activityLaunchpointDataFieldsObject!=null){
-	                        List<BaseContentObject> launchPointDataFieldDefObj=activityLaunchpointDataFieldsObject.getSubContentObjects(null);
-	                        DataFieldDefinition[] launchPointDfdArray=new DataFieldDefinition[launchPointDataFieldDefObj.size()];
-	                        for(int i=0;i<launchPointDataFieldDefObj.size();i++){
-	                            BaseContentObject dataFieldDefin=launchPointDataFieldDefObj.get(i);
-	                            int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
-	                            String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
-	                            String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
-	                            boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
-	                            boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
-	                            boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
-	                            boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
-	                            boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
+                                DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
+                                dfd.setDescription(activityDefineDesc);
+                                dfd.setDisplayName(activityDefineDisplayName);
+                                dfd.setMandatoryField(activityDefineIsMandatoryField);
+                                dfd.setSystemField(activityDefineIsSystemField);
+                                dfd.setReadableField(activityDefineIsReadableField);
+                                dfd.setWriteableField(activityDefineIsWriteableField);
+                                stepDfdArray[i]=dfd;
+                            }
+                            bsd.setActivityStepExposedDataFields(stepName, stepDfdArray);
+                        }
+                    }else{
+                        //throw new ActivityEngineActivityException();
+                        System.out.println("ERROR: activityDefinition Step Data is miss["+activityType+"]");
+                    }
 
-	                            DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
-	                            dfd.setDescription(activityDefineDesc);
-	                            dfd.setDisplayName(activityDefineDisplayName);
-	                            dfd.setMandatoryField(activityDefineIsMandatoryField);
-	                            dfd.setSystemField(activityDefineIsSystemField);
-	                            dfd.setReadableField(activityDefineIsReadableField);
-	                            dfd.setWriteableField(activityDefineIsWriteableField);
-	                            launchPointDfdArray[i]=dfd;
-	                        }
-	                        bsd.setLaunchPointExposedDataFields(launchPointDfdArray);
-	                    }
-	                }
-	                return bsd;
-				}
-			}
-		}catch (ContentReposityException e) {			
-			e.printStackTrace();
-			throw new ActivityEngineRuntimeException();
-		}finally{
-			activityContentSpace.closeContentSpace();			
-		}
-    	return this.getBusinessActivityDefinition(activityType);
+                    BaseContentObject activityLaunchPointMeteObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPoint);
+                    if(activityLaunchPointMeteObj!=null){
+                        BaseContentObject activityLaunchpointDataFieldsObject=activityLaunchPointMeteObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields);
+                        if(activityLaunchpointDataFieldsObject!=null){
+                            List<BaseContentObject> launchPointDataFieldDefObj=activityLaunchpointDataFieldsObject.getSubContentObjects(null);
+                            DataFieldDefinition[] launchPointDfdArray=new DataFieldDefinition[launchPointDataFieldDefObj.size()];
+                            for(int i=0;i<launchPointDataFieldDefObj.size();i++){
+                                BaseContentObject dataFieldDefin=launchPointDataFieldDefObj.get(i);
+                                int activityDefineType=((Long)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType).getPropertyValue())).intValue();
+                                String activityDefineDisplayName=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName).getPropertyValue().toString();
+                                String activityDefineDesc=dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description).getPropertyValue().toString();
+                                boolean activityDefineIsArray=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField).getPropertyValue());
+                                boolean activityDefineIsSystemField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField).getPropertyValue());
+                                boolean activityDefineIsMandatoryField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField).getPropertyValue());
+                                boolean activityDefineIsReadableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField).getPropertyValue());
+                                boolean activityDefineIsWriteableField=(Boolean)(dataFieldDefin.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField).getPropertyValue());
+
+                                DataFieldDefinition dfd=ActivityComponentFactory.cteateDataFieldDefinition(dataFieldDefin.getContentObjectName(), activityDefineType, activityDefineIsArray);
+                                dfd.setDescription(activityDefineDesc);
+                                dfd.setDisplayName(activityDefineDisplayName);
+                                dfd.setMandatoryField(activityDefineIsMandatoryField);
+                                dfd.setSystemField(activityDefineIsSystemField);
+                                dfd.setReadableField(activityDefineIsReadableField);
+                                dfd.setWriteableField(activityDefineIsWriteableField);
+                                launchPointDfdArray[i]=dfd;
+                            }
+                            bsd.setLaunchPointExposedDataFields(launchPointDfdArray);
+                        }
+                    }
+                    return bsd;
+                }
+            }
+        }catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            activityContentSpace.closeContentSpace();
+        }
+        return this.getBusinessActivityDefinition(activityType);
     }
-     
+
     @Override
     public BusinessActivity launchBusinessActivity(String activityType,	ActivityData[] initActivityData,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
         BusinessActivityDefinition currentActivityDefin=getBusinessActivityDefinition(activityType);
@@ -2497,21 +2510,21 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         }
         BusinessActivity businessActivity=ActivityComponentFactory.createBusinessActivity(processId,this.activitySpaceName,activityType);
         return businessActivity;
-    }   
-    
+    }
+
     private void persistActivityInstanceTypeDefinitionSnapshoot(BaseContentObject snapshootContainer,BusinessActivityDefinition bd)throws ActivityEngineActivityException, ActivityEngineDataException, ActivityEngineRuntimeException{
-    	String activityType=bd.getActivityType();
-    	BaseContentObject activityDefineObj=snapshootContainer;
-    	try{
-    		List<ContentObjectProperty> defineParamLst=new ArrayList<ContentObjectProperty>();
-    		
-    		ContentObjectProperty activityDefineMetaConfigVerProperty=ContentComponentFactory.createContentObjectProperty();
+        String activityType=bd.getActivityType();
+        BaseContentObject activityDefineObj=snapshootContainer;
+        try{
+            List<ContentObjectProperty> defineParamLst=new ArrayList<ContentObjectProperty>();
+
+            ContentObjectProperty activityDefineMetaConfigVerProperty=ContentComponentFactory.createContentObjectProperty();
             activityDefineMetaConfigVerProperty.setMultiple(false);
             activityDefineMetaConfigVerProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
             activityDefineMetaConfigVerProperty.setPropertyType(PropertyType.LONG);
             activityDefineMetaConfigVerProperty.setPropertyValue(new Long(bd.getMetaConfigurationVersion()));
             defineParamLst.add(activityDefineMetaConfigVerProperty);
-    		    		
+
             ContentObjectProperty activityDefineStatusProperty=ContentComponentFactory.createContentObjectProperty();
             activityDefineStatusProperty.setMultiple(false);
             activityDefineStatusProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
@@ -2626,7 +2639,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 throw new ActivityEngineDataException();
             }
             */
-            
+
             DataFieldDefinition[] dfdArray=bd.getActivityDataFields();
             if(dfdArray==null){
                 throw new ActivityEngineDataException();
@@ -2781,7 +2794,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             DataFieldDefinition[] launchPointExposedDataFields=bd.getLaunchPointExposedDataFields();
             if(launchPointExposedDataFields!=null){
                 for(DataFieldDefinition df:launchPointExposedDataFields){
-                	List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
+                    List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
                     ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
                     fieldTypeProperty.setMultiple(false);
                     fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
@@ -2841,10 +2854,10 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                     launchPointExposedDataFieldsObj.addSubContentObject(df.getFieldName(), paramLst, false);
                 }
             }
-    	} catch (ContentReposityException e) {
-    		e.printStackTrace();
-    		throw new ActivityEngineRuntimeException();
-    	}	
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
     }
 
     private boolean verifyActivityData(ActivityData[] inputActivityData,DataFieldDefinition[] activityDataFieldArray){
@@ -3228,28 +3241,28 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 
     @Override
     public boolean suspendBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException{
-    	 ProcessSpace targetProcessSpace;
-         try {
-             targetProcessSpace = ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
-             return targetProcessSpace.suspendProcessByProcessObjectId(activityId);
-         } catch (ProcessRepositoryRuntimeException e) {
-             e.printStackTrace();
-             throw new ActivityEngineProcessException();
-         }
+        ProcessSpace targetProcessSpace;
+        try {
+            targetProcessSpace = ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+            return targetProcessSpace.suspendProcessByProcessObjectId(activityId);
+        } catch (ProcessRepositoryRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineProcessException();
+        }
     }
-    
+
     @Override
-	public boolean activateBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException{
-		 ProcessSpace targetProcessSpace;
-	     try {
-	    	 targetProcessSpace = ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
-	         return targetProcessSpace.activateProcessByProcessObjectId(activityId);
-	     } catch (ProcessRepositoryRuntimeException e) {
-	         e.printStackTrace();
-	         throw new ActivityEngineProcessException();
-	     }
-	}
-     
+    public boolean activateBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException{
+        ProcessSpace targetProcessSpace;
+        try {
+            targetProcessSpace = ProcessComponentFactory.connectProcessSpace(this.activitySpaceName);
+            return targetProcessSpace.activateProcessByProcessObjectId(activityId);
+        } catch (ProcessRepositoryRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineProcessException();
+        }
+    }
+
     @Override
     public BusinessActivity getBusinessActivityByActivityId(String activityId) throws ActivityEngineProcessException {
         ProcessSpace targetProcessSpace;
@@ -3404,32 +3417,32 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         }
     }
 
-	@Override
-	public boolean addBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }
-	        else{
+    @Override
+    public boolean addBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }
+            else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
@@ -3437,266 +3450,266 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
 
                 BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
-	            if(dataFieldObj==null){
-	            	dataFieldObj=targetActivityDefineObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields, null, false);
-	            }
-	            if(dataFieldObj.getSubContentObject(dataField.getFieldName())!=null){
-	              	throw new ActivityEngineDataException();
-	            }else{
-	              	List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
-	                ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
-	                fieldTypeProperty.setMultiple(false);
-	                fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
-	                fieldTypeProperty.setPropertyType(PropertyType.LONG);
-	                fieldTypeProperty.setPropertyValue(new Long(dataField.getFieldType()));
-	                paramLst.add(fieldTypeProperty);
+                if(dataFieldObj==null){
+                    dataFieldObj=targetActivityDefineObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields, null, false);
+                }
+                if(dataFieldObj.getSubContentObject(dataField.getFieldName())!=null){
+                    throw new ActivityEngineDataException();
+                }else{
+                    List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
+                    ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+                    fieldTypeProperty.setMultiple(false);
+                    fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+                    fieldTypeProperty.setPropertyType(PropertyType.LONG);
+                    fieldTypeProperty.setPropertyValue(new Long(dataField.getFieldType()));
+                    paramLst.add(fieldTypeProperty);
 
-	                ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
-	                displayProperty.setMultiple(false);
-	                displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
-	                displayProperty.setPropertyType(PropertyType.STRING);
-	                displayProperty.setPropertyValue(dataField.getDisplayName());
-	                paramLst.add(displayProperty);
+                    ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+                    displayProperty.setMultiple(false);
+                    displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+                    displayProperty.setPropertyType(PropertyType.STRING);
+                    displayProperty.setPropertyValue(dataField.getDisplayName());
+                    paramLst.add(displayProperty);
 
-	                ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
-	                descriptionProperty.setMultiple(false);
-	                descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
-	                descriptionProperty.setPropertyType(PropertyType.STRING);
-	                descriptionProperty.setPropertyValue(dataField.getDescription());
-	                paramLst.add(descriptionProperty);
+                    ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+                    descriptionProperty.setMultiple(false);
+                    descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+                    descriptionProperty.setPropertyType(PropertyType.STRING);
+                    descriptionProperty.setPropertyValue(dataField.getDescription());
+                    paramLst.add(descriptionProperty);
 
-	                ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isArrayFieldProperty.setMultiple(false);
-	                isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
-	                isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isArrayFieldProperty.setPropertyValue(dataField.isArrayField());
-	                paramLst.add(isArrayFieldProperty);
+                    ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isArrayFieldProperty.setMultiple(false);
+                    isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+                    isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isArrayFieldProperty.setPropertyValue(dataField.isArrayField());
+                    paramLst.add(isArrayFieldProperty);
 
-	                ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isSystemFieldProperty.setMultiple(false);
-	                isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
-	                isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isSystemFieldProperty.setPropertyValue(dataField.isSystemField());
-	                paramLst.add(isSystemFieldProperty);
+                    ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isSystemFieldProperty.setMultiple(false);
+                    isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+                    isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isSystemFieldProperty.setPropertyValue(dataField.isSystemField());
+                    paramLst.add(isSystemFieldProperty);
 
-	                ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isMandatoryFieldProperty.setMultiple(false);
-	                isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
-	                isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isMandatoryFieldProperty.setPropertyValue(dataField.isMandatoryField());
-	                paramLst.add(isMandatoryFieldProperty);
+                    ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isMandatoryFieldProperty.setMultiple(false);
+                    isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+                    isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isMandatoryFieldProperty.setPropertyValue(dataField.isMandatoryField());
+                    paramLst.add(isMandatoryFieldProperty);
 
-	                ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isReadableFieldProperty.setMultiple(false);
-	                isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
-	                isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isReadableFieldProperty.setPropertyValue(dataField.isReadableField());
-	                paramLst.add(isReadableFieldProperty);
+                    ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isReadableFieldProperty.setMultiple(false);
+                    isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
+                    isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isReadableFieldProperty.setPropertyValue(dataField.isReadableField());
+                    paramLst.add(isReadableFieldProperty);
 
-	                ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isWriteableFieldProperty.setMultiple(false);
-	                isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
-	                isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isWriteableFieldProperty.setPropertyValue(dataField.isWriteableField());
-	                paramLst.add(isWriteableFieldProperty);
+                    ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isWriteableFieldProperty.setMultiple(false);
+                    isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
+                    isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isWriteableFieldProperty.setPropertyValue(dataField.isWriteableField());
+                    paramLst.add(isWriteableFieldProperty);
 
-	                dataFieldObj.addSubContentObject(dataField.getFieldName(), paramLst, false);
-	            }
-	            return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+                    dataFieldObj.addSubContentObject(dataField.getFieldName(), paramLst, false);
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean updateBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }
-	        else{
+    @Override
+    public boolean updateBusinessActivityDefinitionDataFieldDefinition(String activityType,DataFieldDefinition dataField) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }
+            else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
                 activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-                
+
                 BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
-	            if(dataFieldObj==null){
-	            	throw new ActivityEngineActivityException();
-	            }
-	            if(dataFieldObj.getSubContentObject(dataField.getFieldName())==null){
-	              	throw new ActivityEngineDataException();
-	            }else{
-	            	dataFieldObj.removeSubContentObject(dataField.getFieldName(), false);
-	            	List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
-	                ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
-	                fieldTypeProperty.setMultiple(false);
-	                fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
-	                fieldTypeProperty.setPropertyType(PropertyType.LONG);
-	                fieldTypeProperty.setPropertyValue(new Long(dataField.getFieldType()));
-	                paramLst.add(fieldTypeProperty);
+                if(dataFieldObj==null){
+                    throw new ActivityEngineActivityException();
+                }
+                if(dataFieldObj.getSubContentObject(dataField.getFieldName())==null){
+                    throw new ActivityEngineDataException();
+                }else{
+                    dataFieldObj.removeSubContentObject(dataField.getFieldName(), false);
+                    List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
+                    ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
+                    fieldTypeProperty.setMultiple(false);
+                    fieldTypeProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_fieldType);
+                    fieldTypeProperty.setPropertyType(PropertyType.LONG);
+                    fieldTypeProperty.setPropertyValue(new Long(dataField.getFieldType()));
+                    paramLst.add(fieldTypeProperty);
 
-	                ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
-	                displayProperty.setMultiple(false);
-	                displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
-	                displayProperty.setPropertyType(PropertyType.STRING);
-	                displayProperty.setPropertyValue(dataField.getDisplayName());
-	                paramLst.add(displayProperty);
+                    ContentObjectProperty displayProperty=ContentComponentFactory.createContentObjectProperty();
+                    displayProperty.setMultiple(false);
+                    displayProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_displayName);
+                    displayProperty.setPropertyType(PropertyType.STRING);
+                    displayProperty.setPropertyValue(dataField.getDisplayName());
+                    paramLst.add(displayProperty);
 
-	                ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
-	                descriptionProperty.setMultiple(false);
-	                descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
-	                descriptionProperty.setPropertyType(PropertyType.STRING);
-	                descriptionProperty.setPropertyValue(dataField.getDescription());
-	                paramLst.add(descriptionProperty);
+                    ContentObjectProperty descriptionProperty=ContentComponentFactory.createContentObjectProperty();
+                    descriptionProperty.setMultiple(false);
+                    descriptionProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_description);
+                    descriptionProperty.setPropertyType(PropertyType.STRING);
+                    descriptionProperty.setPropertyValue(dataField.getDescription());
+                    paramLst.add(descriptionProperty);
 
-	                ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isArrayFieldProperty.setMultiple(false);
-	                isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
-	                isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isArrayFieldProperty.setPropertyValue(dataField.isArrayField());
-	                paramLst.add(isArrayFieldProperty);
+                    ContentObjectProperty isArrayFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isArrayFieldProperty.setMultiple(false);
+                    isArrayFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isArrayField);
+                    isArrayFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isArrayFieldProperty.setPropertyValue(dataField.isArrayField());
+                    paramLst.add(isArrayFieldProperty);
 
-	                ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isSystemFieldProperty.setMultiple(false);
-	                isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
-	                isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isSystemFieldProperty.setPropertyValue(dataField.isSystemField());
-	                paramLst.add(isSystemFieldProperty);
+                    ContentObjectProperty isSystemFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isSystemFieldProperty.setMultiple(false);
+                    isSystemFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isSystemField);
+                    isSystemFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isSystemFieldProperty.setPropertyValue(dataField.isSystemField());
+                    paramLst.add(isSystemFieldProperty);
 
-	                ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isMandatoryFieldProperty.setMultiple(false);
-	                isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
-	                isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isMandatoryFieldProperty.setPropertyValue(dataField.isMandatoryField());
-	                paramLst.add(isMandatoryFieldProperty);
+                    ContentObjectProperty isMandatoryFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isMandatoryFieldProperty.setMultiple(false);
+                    isMandatoryFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isMandatoryField);
+                    isMandatoryFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isMandatoryFieldProperty.setPropertyValue(dataField.isMandatoryField());
+                    paramLst.add(isMandatoryFieldProperty);
 
-	                ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isReadableFieldProperty.setMultiple(false);
-	                isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
-	                isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isReadableFieldProperty.setPropertyValue(dataField.isReadableField());
-	                paramLst.add(isReadableFieldProperty);
+                    ContentObjectProperty isReadableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isReadableFieldProperty.setMultiple(false);
+                    isReadableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isReadableField);
+                    isReadableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isReadableFieldProperty.setPropertyValue(dataField.isReadableField());
+                    paramLst.add(isReadableFieldProperty);
 
-	                ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
-	                isWriteableFieldProperty.setMultiple(false);
-	                isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
-	                isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
-	                isWriteableFieldProperty.setPropertyValue(dataField.isWriteableField());
-	                paramLst.add(isWriteableFieldProperty);
+                    ContentObjectProperty isWriteableFieldProperty=ContentComponentFactory.createContentObjectProperty();
+                    isWriteableFieldProperty.setMultiple(false);
+                    isWriteableFieldProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_DataFieldDefinition_isWriteableField);
+                    isWriteableFieldProperty.setPropertyType(PropertyType.BOOLEAN);
+                    isWriteableFieldProperty.setPropertyValue(dataField.isWriteableField());
+                    paramLst.add(isWriteableFieldProperty);
 
-	                dataFieldObj.addSubContentObject(dataField.getFieldName(), paramLst, false);
-	            }
-	            return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+                    dataFieldObj.addSubContentObject(dataField.getFieldName(), paramLst, false);
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean removeBusinessActivityDefinitionDataFieldDefinition(String activityType, String dataFieldName) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }
-	        else{
+    @Override
+    public boolean removeBusinessActivityDefinitionDataFieldDefinition(String activityType, String dataFieldName) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }
+            else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
                 activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-	        	
-	            BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
-	            if(dataFieldObj==null){
-	            	throw new ActivityEngineActivityException();
-	            }
-	            if(dataFieldObj.getSubContentObject(dataFieldName)==null){
-	              	throw new ActivityEngineDataException();
-	            }else{
-	            	dataFieldObj.removeSubContentObject(dataFieldName, false);
-	            }
-	            return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
 
-	@Override
-	public boolean addBusinessActivityDefinitionExposedStep(String activityType, String stepName,String relatedRoleName) throws ActivityEngineRuntimeException,ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }else{
+                BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
+                if(dataFieldObj==null){
+                    throw new ActivityEngineActivityException();
+                }
+                if(dataFieldObj.getSubContentObject(dataFieldName)==null){
+                    throw new ActivityEngineDataException();
+                }else{
+                    dataFieldObj.removeSubContentObject(dataFieldName, false);
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
+
+    @Override
+    public boolean addBusinessActivityDefinitionExposedStep(String activityType, String stepName,String relatedRoleName) throws ActivityEngineRuntimeException,ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
@@ -3704,172 +3717,172 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
 
                 BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
-	        	if(stepsObj==null){
-	        		stepsObj=targetActivityDefineObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, null, false);
-	        	}
-	        	BaseContentObject activityStepContentObject=stepsObj.getSubContentObject(stepName);
-	        	if(activityStepContentObject!=null){
-	        		throw new ActivityEngineRuntimeException();
-	        	}
-	        	ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
-	        	if(exposedStepsProperty==null){
-	        		targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps, new String[]{stepName}, false);
-	        	}else{
-	        		String[] exposedStepsArray=(String[])exposedStepsProperty.getPropertyValue();
-	        		String[] newExposedStepsArray=new String[exposedStepsArray.length+1];
-	        		for(int i=0;i<exposedStepsArray.length;i++){
-	        			if(exposedStepsArray[i].equals(stepName)){
-	        				throw new ActivityEngineRuntimeException();
-	        			}else{
-	        				newExposedStepsArray[i]=exposedStepsArray[i];
-	        			}
-	        		}
-	        		newExposedStepsArray[exposedStepsArray.length]=stepName;
-	        		exposedStepsProperty.setPropertyValue(newExposedStepsArray);
-	        		targetActivityDefineObj.updateProperty(exposedStepsProperty, false);
-	        	}
-	        	BaseContentObject currentStepdfd=stepsObj.addSubContentObject(stepName, null, false);
-	        	if(relatedRoleName!=null){
-                     currentStepdfd.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, relatedRoleName, false);
-                 }
-	        	return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+                if(stepsObj==null){
+                    stepsObj=targetActivityDefineObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps, null, false);
+                }
+                BaseContentObject activityStepContentObject=stepsObj.getSubContentObject(stepName);
+                if(activityStepContentObject!=null){
+                    throw new ActivityEngineRuntimeException();
+                }
+                ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
+                if(exposedStepsProperty==null){
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps, new String[]{stepName}, false);
+                }else{
+                    String[] exposedStepsArray=(String[])exposedStepsProperty.getPropertyValue();
+                    String[] newExposedStepsArray=new String[exposedStepsArray.length+1];
+                    for(int i=0;i<exposedStepsArray.length;i++){
+                        if(exposedStepsArray[i].equals(stepName)){
+                            throw new ActivityEngineRuntimeException();
+                        }else{
+                            newExposedStepsArray[i]=exposedStepsArray[i];
+                        }
+                    }
+                    newExposedStepsArray[exposedStepsArray.length]=stepName;
+                    exposedStepsProperty.setPropertyValue(newExposedStepsArray);
+                    targetActivityDefineObj.updateProperty(exposedStepsProperty, false);
+                }
+                BaseContentObject currentStepdfd=stepsObj.addSubContentObject(stepName, null, false);
+                if(relatedRoleName!=null){
+                    currentStepdfd.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, relatedRoleName, false);
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean removeBusinessActivityDefinitionExposedStep(String activityType, String stepName) throws ActivityEngineRuntimeException,ActivityEngineActivityException{
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }else{
+    @Override
+    public boolean removeBusinessActivityDefinitionExposedStep(String activityType, String stepName) throws ActivityEngineRuntimeException,ActivityEngineActivityException{
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
                 activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-                
-	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
-	        	if(stepsObj==null){
-	        		throw new ActivityEngineActivityException();
-	        	}
-	        	BaseContentObject activityStepContentObject=stepsObj.getSubContentObject(stepName);
-	        	if(activityStepContentObject==null){
-	        		throw new ActivityEngineRuntimeException();
-	        	}else{
-	        		stepsObj.removeSubContentObject(stepName,false);
-	        	}
-	        	ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
-	        	if(exposedStepsProperty==null){
-	        		throw new ActivityEngineActivityException();
-	        	}else{
-	        		String[] exposedStepsArray=(String[])exposedStepsProperty.getPropertyValue();
-	        		List<String> tempList=new ArrayList<String>();
-	        		for(String currentStep:exposedStepsArray){
-	        			if(!currentStep.equals(stepName)){
-	        				tempList.add(currentStep);
-	        			}
-	        		}
-	        		String[] newExposedStepsArray=new String[tempList.size()];
-	        		tempList.toArray(newExposedStepsArray);
-	        		exposedStepsProperty.setPropertyValue(newExposedStepsArray);
-	        		targetActivityDefineObj.updateProperty(exposedStepsProperty, false);
-	        	}
-	        	return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
 
-	@Override
-	public boolean setBusinessActivityDefinitionExposedStepDataFieldDefinitions(String activityType, String stepName,DataFieldDefinition[] dataFieldDefinitions) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }else{
+                BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+                if(stepsObj==null){
+                    throw new ActivityEngineActivityException();
+                }
+                BaseContentObject activityStepContentObject=stepsObj.getSubContentObject(stepName);
+                if(activityStepContentObject==null){
+                    throw new ActivityEngineRuntimeException();
+                }else{
+                    stepsObj.removeSubContentObject(stepName,false);
+                }
+                ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
+                if(exposedStepsProperty==null){
+                    throw new ActivityEngineActivityException();
+                }else{
+                    String[] exposedStepsArray=(String[])exposedStepsProperty.getPropertyValue();
+                    List<String> tempList=new ArrayList<String>();
+                    for(String currentStep:exposedStepsArray){
+                        if(!currentStep.equals(stepName)){
+                            tempList.add(currentStep);
+                        }
+                    }
+                    String[] newExposedStepsArray=new String[tempList.size()];
+                    tempList.toArray(newExposedStepsArray);
+                    exposedStepsProperty.setPropertyValue(newExposedStepsArray);
+                    targetActivityDefineObj.updateProperty(exposedStepsProperty, false);
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
+
+    @Override
+    public boolean setBusinessActivityDefinitionExposedStepDataFieldDefinitions(String activityType, String stepName,DataFieldDefinition[] dataFieldDefinitions) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
                 activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-	        	
-	        	ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
-	        	if(exposedStepsProperty==null){
-	        		throw new ActivityEngineActivityException();
-	        	}else{
-	        		String[] exposedStepsArray=(String[])exposedStepsProperty.getPropertyValue();
-	        		boolean currentStepIsExposed=false;
-	        		for(String currentStep:exposedStepsArray){
-	        			if(currentStep.equals(stepName)){
-	        				currentStepIsExposed=true;
-	        				break;
-	        			}
-	        		}
-	        		if(!currentStepIsExposed){
-	        			 throw new ActivityEngineRuntimeException();
-	        		}
-	        		BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
-		        	if(stepsObj==null){
-		        		throw new ActivityEngineActivityException();
-		        	}
-		        	BaseContentObject activityStepContentObject=stepsObj.getSubContentObject(stepName);
-		        	if(activityStepContentObject==null){
-		        		throw new ActivityEngineRuntimeException();
-		        	}else{
-		        		List<BaseContentObject> dataFieldDefinitionsList=activityStepContentObject.getSubContentObjects(null);
-		        		if(dataFieldDefinitionsList!=null){
-		        			for(BaseContentObject currentFieldDefinition:dataFieldDefinitionsList){
-		        				activityStepContentObject.removeSubContentObject(currentFieldDefinition.getContentObjectName(), false);
-		        			}
-		        		}
-		        		for(DataFieldDefinition df:dataFieldDefinitions){
+
+                ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
+                if(exposedStepsProperty==null){
+                    throw new ActivityEngineActivityException();
+                }else{
+                    String[] exposedStepsArray=(String[])exposedStepsProperty.getPropertyValue();
+                    boolean currentStepIsExposed=false;
+                    for(String currentStep:exposedStepsArray){
+                        if(currentStep.equals(stepName)){
+                            currentStepIsExposed=true;
+                            break;
+                        }
+                    }
+                    if(!currentStepIsExposed){
+                        throw new ActivityEngineRuntimeException();
+                    }
+                    BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+                    if(stepsObj==null){
+                        throw new ActivityEngineActivityException();
+                    }
+                    BaseContentObject activityStepContentObject=stepsObj.getSubContentObject(stepName);
+                    if(activityStepContentObject==null){
+                        throw new ActivityEngineRuntimeException();
+                    }else{
+                        List<BaseContentObject> dataFieldDefinitionsList=activityStepContentObject.getSubContentObjects(null);
+                        if(dataFieldDefinitionsList!=null){
+                            for(BaseContentObject currentFieldDefinition:dataFieldDefinitionsList){
+                                activityStepContentObject.removeSubContentObject(currentFieldDefinition.getContentObjectName(), false);
+                            }
+                        }
+                        for(DataFieldDefinition df:dataFieldDefinitions){
                             List<ContentObjectProperty> paramLst=new ArrayList<ContentObjectProperty>();
                             ContentObjectProperty fieldTypeProperty=ContentComponentFactory.createContentObjectProperty();
                             fieldTypeProperty.setMultiple(false);
@@ -3928,370 +3941,370 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                             paramLst.add(isWriteableFieldProperty);
 
                             activityStepContentObject.addSubContentObject(df.getFieldName(), paramLst, false);
-                        }	
-		        	}
-	        	}
-	        	return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+                        }
+                    }
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean setBusinessActivityDefinitionExposedStepProcessProperties(String activityType,ActivityStepDefinition activityStepDefinition) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		String stepName=activityStepDefinition.getStepId();
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }else{
+    @Override
+    public boolean setBusinessActivityDefinitionExposedStepProcessProperties(String activityType,ActivityStepDefinition activityStepDefinition) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        String stepName=activityStepDefinition.getStepId();
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
                 activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-                
-	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
-	        	if(stepsObj==null){
-	        		throw new ActivityEngineActivityException();
-	        	}
-	        	BaseContentObject stepDefinObj=stepsObj.getSubContentObject(stepName);
-	        	if(stepDefinObj==null){
-	        		throw new ActivityEngineRuntimeException();
-	        	}
-	        	String stepRole=activityStepDefinition.getStepRole();
-	        	ContentObjectProperty roleProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole);
-	        	if(stepRole!=null){
-	        		if(roleProperty!=null){
-	        			roleProperty.setPropertyValue(stepRole);
-	        			stepDefinObj.updateProperty(roleProperty, false);
-	        		}else{
-	        			stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, stepRole, false);
-	        		}
-	        	}else{
-	        		if(roleProperty!=null){
-	        			stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, false);
-	        		}
-	        	}
-	        	String stepUserIdentityAttribute=activityStepDefinition.getStepUserIdentityAttribute();
-	        	ContentObjectProperty stepUserIdentityAttrProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName);
-	        	if(stepUserIdentityAttribute!=null){
-	        		if(stepUserIdentityAttrProperty!=null){
-	        			stepUserIdentityAttrProperty.setPropertyValue(stepUserIdentityAttribute);
-	        			stepDefinObj.updateProperty(stepUserIdentityAttrProperty, false);
-	        		}else{
-	        			stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName, stepUserIdentityAttribute, false);
-	        		}
-	        	}else{
-	        		if(stepUserIdentityAttrProperty!=null){
-	        			stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName, false);
-	        		}
-	        	}
-	        	String[] stepProcessVariables=activityStepDefinition.getStepProcessVariables();
-	        	ContentObjectProperty stepProcessVariableListProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList);
-	        	if(stepProcessVariables!=null){
-	        		if(stepProcessVariableListProperty!=null){
-	        			stepProcessVariableListProperty.setPropertyValue(stepProcessVariables);
-	        			stepDefinObj.updateProperty(stepProcessVariableListProperty, false);
-	        		}else{
-	        			stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList, stepProcessVariables, false);
-	        		}
-	        	}else{
-	        		if(stepProcessVariableListProperty!=null){
-	        			stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList, false);
-	        		}
-	        	}
-	        	return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
-	
-	@Override
-	public boolean setBusinessActivityDefinitionExposedStepDecisionPointProperties(String activityType,ActivityStepDefinition activityStepDefinition) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		String stepName=activityStepDefinition.getStepId();
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
-	        if(targetActivityDefineObj==null){
-	            throw new ActivityEngineActivityException();
-	        }else{
+
+                BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+                if(stepsObj==null){
+                    throw new ActivityEngineActivityException();
+                }
+                BaseContentObject stepDefinObj=stepsObj.getSubContentObject(stepName);
+                if(stepDefinObj==null){
+                    throw new ActivityEngineRuntimeException();
+                }
+                String stepRole=activityStepDefinition.getStepRole();
+                ContentObjectProperty roleProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole);
+                if(stepRole!=null){
+                    if(roleProperty!=null){
+                        roleProperty.setPropertyValue(stepRole);
+                        stepDefinObj.updateProperty(roleProperty, false);
+                    }else{
+                        stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, stepRole, false);
+                    }
+                }else{
+                    if(roleProperty!=null){
+                        stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, false);
+                    }
+                }
+                String stepUserIdentityAttribute=activityStepDefinition.getStepUserIdentityAttribute();
+                ContentObjectProperty stepUserIdentityAttrProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName);
+                if(stepUserIdentityAttribute!=null){
+                    if(stepUserIdentityAttrProperty!=null){
+                        stepUserIdentityAttrProperty.setPropertyValue(stepUserIdentityAttribute);
+                        stepDefinObj.updateProperty(stepUserIdentityAttrProperty, false);
+                    }else{
+                        stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName, stepUserIdentityAttribute, false);
+                    }
+                }else{
+                    if(stepUserIdentityAttrProperty!=null){
+                        stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepUserIdentityAttributeName, false);
+                    }
+                }
+                String[] stepProcessVariables=activityStepDefinition.getStepProcessVariables();
+                ContentObjectProperty stepProcessVariableListProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList);
+                if(stepProcessVariables!=null){
+                    if(stepProcessVariableListProperty!=null){
+                        stepProcessVariableListProperty.setPropertyValue(stepProcessVariables);
+                        stepDefinObj.updateProperty(stepProcessVariableListProperty, false);
+                    }else{
+                        stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList, stepProcessVariables, false);
+                    }
+                }else{
+                    if(stepProcessVariableListProperty!=null){
+                        stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList, false);
+                    }
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
+
+    @Override
+    public boolean setBusinessActivityDefinitionExposedStepDecisionPointProperties(String activityType,ActivityStepDefinition activityStepDefinition) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        String stepName=activityStepDefinition.getStepId();
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            BaseContentObject targetActivityDefineObj=activityDefineObj.getSubContentObject(activityType);
+            if(targetActivityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
                 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
                 activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
                 targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-                
-	        	BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
-	        	if(stepsObj==null){
-	        		throw new ActivityEngineActivityException();
-	        	}
-	        	BaseContentObject stepDefinObj=stepsObj.getSubContentObject(stepName);
-	        	if(stepDefinObj==null){
-	        		throw new ActivityEngineRuntimeException();
-	        	}
-	        	
-	        	String stepDecisionPointAttribute=activityStepDefinition.getStepDecisionPointAttribute();
-	        	ContentObjectProperty stepDecisionPointAttributeProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName);
-	        	if(stepDecisionPointAttribute!=null){
-	        		if(stepDecisionPointAttributeProperty!=null){
-	        			stepDecisionPointAttributeProperty.setPropertyValue(stepDecisionPointAttribute);
-	        			stepDefinObj.updateProperty(stepDecisionPointAttributeProperty, false);
-	        		}else{
-	        			stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName, stepDecisionPointAttribute, false);
-	        		}
-	        	}else{
-	        		if(stepDecisionPointAttributeProperty!=null){
-	        			stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName, false);
-	        		}
-	        	}
-	        	
-	        	String[] stepDecisionPointChoiseList=activityStepDefinition.getStepDecisionPointChooseOptions();
-	        	ContentObjectProperty stepDecisionPointChoiseListProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList);
-	        	if(stepDecisionPointChoiseList!=null){
-	        		if(stepDecisionPointChoiseListProperty!=null){
-	        			stepDecisionPointChoiseListProperty.setPropertyValue(stepDecisionPointChoiseList);
-	        			stepDefinObj.updateProperty(stepDecisionPointChoiseListProperty, false);
-	        		}else{
-	        			stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList, stepDecisionPointChoiseList, false);
-	        		}
-	        	}else{
-	        		if(stepDecisionPointChoiseListProperty!=null){
-	        			stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList, false);
-	        		}
-	        	}
-	        	return true;
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
 
-	@Override
-	public boolean updateBusinessActivityDefinitionProperties(BusinessActivityDefinition bd)throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
-	        if(activityDefineObj==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        BaseContentObject activityTypeDefineObj=activityDefineObj.getSubContentObject(bd.getActivityType());
-	        if(activityTypeDefineObj==null){
-	        	throw new ActivityEngineActivityException();
-	        }
-	        String rosterName=bd.getRosterName();
-	        BusinessActivityDefinition currentBusinessActivity=this.getBusinessActivityDefinition(bd.getActivityType());
-        	String currentRosterName=currentBusinessActivity.getRosterName();
-        	if(currentRosterName!=null){
-        		Roster currentRoster=this.getRoster(rosterName);
-        		currentRoster.removeActivityType(bd.getActivityType());
-        	}
-	        if(rosterName!=null){
-	        	Roster newRoster=this.getRoster(rosterName);
-	        	newRoster.addActivityType(bd.getActivityType());
-	        }
-	        
+                BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
+                if(stepsObj==null){
+                    throw new ActivityEngineActivityException();
+                }
+                BaseContentObject stepDefinObj=stepsObj.getSubContentObject(stepName);
+                if(stepDefinObj==null){
+                    throw new ActivityEngineRuntimeException();
+                }
+
+                String stepDecisionPointAttribute=activityStepDefinition.getStepDecisionPointAttribute();
+                ContentObjectProperty stepDecisionPointAttributeProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName);
+                if(stepDecisionPointAttribute!=null){
+                    if(stepDecisionPointAttributeProperty!=null){
+                        stepDecisionPointAttributeProperty.setPropertyValue(stepDecisionPointAttribute);
+                        stepDefinObj.updateProperty(stepDecisionPointAttributeProperty, false);
+                    }else{
+                        stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName, stepDecisionPointAttribute, false);
+                    }
+                }else{
+                    if(stepDecisionPointAttributeProperty!=null){
+                        stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointAttributeName, false);
+                    }
+                }
+
+                String[] stepDecisionPointChoiseList=activityStepDefinition.getStepDecisionPointChooseOptions();
+                ContentObjectProperty stepDecisionPointChoiseListProperty=stepDefinObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList);
+                if(stepDecisionPointChoiseList!=null){
+                    if(stepDecisionPointChoiseListProperty!=null){
+                        stepDecisionPointChoiseListProperty.setPropertyValue(stepDecisionPointChoiseList);
+                        stepDefinObj.updateProperty(stepDecisionPointChoiseListProperty, false);
+                    }else{
+                        stepDefinObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList, stepDecisionPointChoiseList, false);
+                    }
+                }else{
+                    if(stepDecisionPointChoiseListProperty!=null){
+                        stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList, false);
+                    }
+                }
+                return true;
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
+
+    @Override
+    public boolean updateBusinessActivityDefinitionProperties(BusinessActivityDefinition bd)throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activityDefineObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition);
+            if(activityDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }
+            BaseContentObject activityTypeDefineObj=activityDefineObj.getSubContentObject(bd.getActivityType());
+            if(activityTypeDefineObj==null){
+                throw new ActivityEngineActivityException();
+            }
+            String rosterName=bd.getRosterName();
+            BusinessActivityDefinition currentBusinessActivity=this.getBusinessActivityDefinition(bd.getActivityType());
+            String currentRosterName=currentBusinessActivity.getRosterName();
+            if(currentRosterName!=null){
+                Roster currentRoster=this.getRoster(rosterName);
+                currentRoster.removeActivityType(bd.getActivityType());
+            }
+            if(rosterName!=null){
+                Roster newRoster=this.getRoster(rosterName);
+                newRoster.addActivityType(bd.getActivityType());
+            }
+
             ContentObjectProperty activityDefineMetaConfigVerProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
             long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
             Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
             activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
             activityTypeDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-	        
+
             boolean isActive=bd.isEnabled();
-	        ContentObjectProperty activityDefineStatusProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
-	        activityDefineStatusProperty.setPropertyValue(isActive);
-	        activityTypeDefineObj.updateProperty(activityDefineStatusProperty, false);
-	        
-	        String launchUserIdAttr=bd.getLaunchUserIdentityAttributeName();
-	        ContentObjectProperty launchUserIdentityAttributeNameProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName);
-	        if(launchUserIdAttr!=null){
-	        	if(launchUserIdentityAttributeNameProperty!=null){
-	        		launchUserIdentityAttributeNameProperty.setPropertyValue(launchUserIdAttr);
-	        		activityTypeDefineObj.updateProperty(launchUserIdentityAttributeNameProperty,false);
-	        	}else{
-	        		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName, launchUserIdAttr, false);
-	        	}
-	        }else{
-	        	if(launchUserIdentityAttributeNameProperty!=null){
-	        		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName, false);
-	        	}
-	        }
-	        	
-	        String[] launchRoles=bd.getActivityLaunchRoles();
-	        ContentObjectProperty launchRoleListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles);
-            if(launchRoles!=null){
-            	if(launchRoleListProperty!=null){
-            		launchRoleListProperty.setPropertyValue(launchRoles);
-            		activityTypeDefineObj.updateProperty(launchRoleListProperty, false);
-            	}else{
-            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles, launchRoles, false);
-            	}
+            ContentObjectProperty activityDefineStatusProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
+            activityDefineStatusProperty.setPropertyValue(isActive);
+            activityTypeDefineObj.updateProperty(activityDefineStatusProperty, false);
+
+            String launchUserIdAttr=bd.getLaunchUserIdentityAttributeName();
+            ContentObjectProperty launchUserIdentityAttributeNameProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName);
+            if(launchUserIdAttr!=null){
+                if(launchUserIdentityAttributeNameProperty!=null){
+                    launchUserIdentityAttributeNameProperty.setPropertyValue(launchUserIdAttr);
+                    activityTypeDefineObj.updateProperty(launchUserIdentityAttributeNameProperty,false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName, launchUserIdAttr, false);
+                }
             }else{
-            	if(launchRoleListProperty!=null){
-            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles, false);
-            	}
+                if(launchUserIdentityAttributeNameProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchUserIdentityAttributeName, false);
+                }
             }
-            
+
+            String[] launchRoles=bd.getActivityLaunchRoles();
+            ContentObjectProperty launchRoleListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles);
+            if(launchRoles!=null){
+                if(launchRoleListProperty!=null){
+                    launchRoleListProperty.setPropertyValue(launchRoles);
+                    activityTypeDefineObj.updateProperty(launchRoleListProperty, false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles, launchRoles, false);
+                }
+            }else{
+                if(launchRoleListProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchRoles, false);
+                }
+            }
+
             String[] launchParticipants=bd.getActivityLaunchParticipants();
             ContentObjectProperty launchParticipantListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants);
             if(launchParticipants!=null){
-            	if(launchParticipantListProperty!=null){
-            		launchParticipantListProperty.setPropertyValue(launchParticipants);
-            		activityTypeDefineObj.updateProperty(launchParticipantListProperty, false);
-            	}else{
-            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants, launchParticipants, false);
-            	}
+                if(launchParticipantListProperty!=null){
+                    launchParticipantListProperty.setPropertyValue(launchParticipants);
+                    activityTypeDefineObj.updateProperty(launchParticipantListProperty, false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants, launchParticipants, false);
+                }
             }else{
-            	if(launchParticipantListProperty!=null){
-            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants, false);
-            	}
+                if(launchParticipantListProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchParticipants, false);
+                }
             }
 
             String[] launchProcessVariables=bd.getLaunchProcessVariableList();
             ContentObjectProperty launchProcessVariableListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList);
             if(launchProcessVariables!=null){
-            	if(launchProcessVariableListProperty!=null){
-            		launchProcessVariableListProperty.setPropertyValue(launchProcessVariables);
-            		activityTypeDefineObj.updateProperty(launchProcessVariableListProperty, false);
-            	}else{
-            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList, launchProcessVariables, false);
-            	}
+                if(launchProcessVariableListProperty!=null){
+                    launchProcessVariableListProperty.setPropertyValue(launchProcessVariables);
+                    activityTypeDefineObj.updateProperty(launchProcessVariableListProperty, false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList, launchProcessVariables, false);
+                }
             }else{
-            	if(launchProcessVariableListProperty!=null){
-            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList, false);
-            	}
+                if(launchProcessVariableListProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchProcessVariableList, false);
+                }
             }
 
             String launchDecisionPointAttr=bd.getLaunchDecisionPointAttributeName();
             ContentObjectProperty launchDecisionPointAttributeNameProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName);
             if(launchDecisionPointAttr!=null){
-        	   if(launchDecisionPointAttributeNameProperty!=null){
-        		   launchDecisionPointAttributeNameProperty.setPropertyValue(launchDecisionPointAttr);
-        		   activityTypeDefineObj.updateProperty(launchDecisionPointAttributeNameProperty, false);
-        	   }else{
-        		   activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName, launchDecisionPointAttr,false);
-        	   }
+                if(launchDecisionPointAttributeNameProperty!=null){
+                    launchDecisionPointAttributeNameProperty.setPropertyValue(launchDecisionPointAttr);
+                    activityTypeDefineObj.updateProperty(launchDecisionPointAttributeNameProperty, false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName, launchDecisionPointAttr,false);
+                }
             }else{
-            	if(launchDecisionPointAttributeNameProperty!=null){
-            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName, false);
-            	}
+                if(launchDecisionPointAttributeNameProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointAttributeName, false);
+                }
             }
 
             String[] launchDecisionPointOptions=bd.getLaunchDecisionPointChoiseList();
             ContentObjectProperty launchDecisionPointChoiseListProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList);
             if(launchDecisionPointOptions!=null){
-            	if(launchDecisionPointChoiseListProperty!=null){
-            		launchDecisionPointChoiseListProperty.setPropertyValue(launchDecisionPointOptions);
-            		activityTypeDefineObj.updateProperty(launchDecisionPointChoiseListProperty, false);
-            	}else{
-            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList, launchDecisionPointOptions,false);
-            	}
+                if(launchDecisionPointChoiseListProperty!=null){
+                    launchDecisionPointChoiseListProperty.setPropertyValue(launchDecisionPointOptions);
+                    activityTypeDefineObj.updateProperty(launchDecisionPointChoiseListProperty, false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList, launchDecisionPointOptions,false);
+                }
             }else{
-            	if(launchDecisionPointChoiseListProperty!=null){
-            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList, false);
-            	}
+                if(launchDecisionPointChoiseListProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchDecisionPointChoiseList, false);
+                }
             }
-            
+
             String activityTypeDesc=bd.getActivityDescription();
             ContentObjectProperty activityDescriptionProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description);
             if(activityTypeDesc!=null){
-        	   if(activityDescriptionProperty!=null){
-        		   activityDescriptionProperty.setPropertyValue(activityTypeDesc);
-        		   activityTypeDefineObj.updateProperty(activityDescriptionProperty, false);
-        	   }else{
-        		   activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description, activityTypeDesc, false);
-        	   }
-        	}else{
-        		if(activityDescriptionProperty!=null){
-        			activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description, false);
-        		}
-        	}
-            
+                if(activityDescriptionProperty!=null){
+                    activityDescriptionProperty.setPropertyValue(activityTypeDesc);
+                    activityTypeDefineObj.updateProperty(activityDescriptionProperty, false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description, activityTypeDesc, false);
+                }
+            }else{
+                if(activityDescriptionProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_description, false);
+                }
+            }
+
             String[] activityTypeCategories=bd.getActivityCategories();
             ContentObjectProperty activityCategoriesProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories);
             if(activityTypeCategories!=null){
-            	if(activityCategoriesProperty!=null){
-            		activityCategoriesProperty.setPropertyValue(activityTypeCategories);
-            		activityTypeDefineObj.updateProperty(activityCategoriesProperty, false);
-            	}else{
-            		activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories, activityTypeCategories,false);
-            	}
+                if(activityCategoriesProperty!=null){
+                    activityCategoriesProperty.setPropertyValue(activityTypeCategories);
+                    activityTypeDefineObj.updateProperty(activityCategoriesProperty, false);
+                }else{
+                    activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories, activityTypeCategories,false);
+                }
             }else{
-            	if(activityCategoriesProperty!=null){
-            		activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories, false);
-            	}
+                if(activityCategoriesProperty!=null){
+                    activityTypeDefineObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_categories, false);
+                }
             }
-            
+
             BaseContentObject launchPointMetaInfoObj=activityTypeDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPoint);
             if(launchPointMetaInfoObj==null){
-	        	throw new ActivityEngineActivityException();
-	        }
+                throw new ActivityEngineActivityException();
+            }
             BaseContentObject launchPointExposedDataFieldsObj=launchPointMetaInfoObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields);
             if(launchPointExposedDataFieldsObj==null){
-	        	throw new ActivityEngineActivityException();
-	        }
+                throw new ActivityEngineActivityException();
+            }
             launchPointMetaInfoObj.removeSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields, false);
             launchPointExposedDataFieldsObj=launchPointMetaInfoObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_launchPointExposedDataFields, null, false);
             DataFieldDefinition[] launchPointExposedDataFields=bd.getLaunchPointExposedDataFields();
@@ -4358,361 +4371,361 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 }
             }
             return true;
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public String[] getActivityTypeCategories()throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
-	        if(activitySpaceBusinessCategoriesProperty==null){
-	        	return null;
-	        }else{
-	        	return (String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public String[] getActivityTypeCategories()throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+            if(activitySpaceBusinessCategoriesProperty==null){
+                return null;
+            }else{
+                return (String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean setActivityTypeCategories(String[] categories)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-		if(categories==null){
-			throw new ActivityEngineRuntimeException();
-		}
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
-	        if(activitySpaceBusinessCategoriesProperty!=null){
-	        	activitySpaceBusinessCategoriesProperty.setPropertyValue(categories);
-	        	activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
-	        }else{
-	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, categories, false);
-	        }
-	        return true;
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public boolean setActivityTypeCategories(String[] categories)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        if(categories==null){
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+            if(activitySpaceBusinessCategoriesProperty!=null){
+                activitySpaceBusinessCategoriesProperty.setPropertyValue(categories);
+                activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
+            }else{
+                activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, categories, false);
+            }
+            return true;
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean addActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-		if(categoryName==null){
-			throw new ActivityEngineRuntimeException();
-		}
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
-	        if(activitySpaceBusinessCategoriesProperty!=null){
-	        	String[] currentCategories=(String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
-	        	String[] newCategories=new String[currentCategories.length+1];
-	        	for(int i=0;i<currentCategories.length;i++){
-	        		String currentCategory=currentCategories[i];
-	        		if(currentCategory.equals(categoryName)){
-	        			return false;
-	        		}else{
-	        			newCategories[i]=currentCategories[i];
-	        		}
-	        	}
-	        	newCategories[newCategories.length-1]=categoryName;
-	        	activitySpaceBusinessCategoriesProperty.setPropertyValue(newCategories);
-	        	activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
-	        }else{
-	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, new String[]{categoryName}, false);
-	        }
-	        return true;
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public boolean addActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        if(categoryName==null){
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+            if(activitySpaceBusinessCategoriesProperty!=null){
+                String[] currentCategories=(String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
+                String[] newCategories=new String[currentCategories.length+1];
+                for(int i=0;i<currentCategories.length;i++){
+                    String currentCategory=currentCategories[i];
+                    if(currentCategory.equals(categoryName)){
+                        return false;
+                    }else{
+                        newCategories[i]=currentCategories[i];
+                    }
+                }
+                newCategories[newCategories.length-1]=categoryName;
+                activitySpaceBusinessCategoriesProperty.setPropertyValue(newCategories);
+                activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
+            }else{
+                activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, new String[]{categoryName}, false);
+            }
+            return true;
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean removeActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-		if(categoryName==null){
-			throw new ActivityEngineRuntimeException();
-		}
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
-	        if(activitySpaceBusinessCategoriesProperty!=null){
-	        	String[] currentCategories=(String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
-	        	List<String> newCateoriesList=new ArrayList<String>();
-	        	for(int i=0;i<currentCategories.length;i++){
-	        		String currentCategory=currentCategories[i];
-	        		if(!currentCategory.equals(categoryName)){
-	        			newCateoriesList.add(categoryName);
-	        		}
-	        	}
-	        	if(newCateoriesList.size()==currentCategories.length){
-	        		throw new ActivityEngineRuntimeException();
-	        	}
-	        	String[] newCategories=new String[newCateoriesList.size()];
-	        	newCateoriesList.toArray(newCategories);
-	        	activitySpaceBusinessCategoriesProperty.setPropertyValue(newCategories);
-	        	activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
-	        }else{
-	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, new String[]{categoryName}, false);
-	        }
-	        return true;
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public boolean removeActivityTypeCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        if(categoryName==null){
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceBusinessCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories);
+            if(activitySpaceBusinessCategoriesProperty!=null){
+                String[] currentCategories=(String[])activitySpaceBusinessCategoriesProperty.getPropertyValue();
+                List<String> newCateoriesList=new ArrayList<String>();
+                for(int i=0;i<currentCategories.length;i++){
+                    String currentCategory=currentCategories[i];
+                    if(!currentCategory.equals(categoryName)){
+                        newCateoriesList.add(categoryName);
+                    }
+                }
+                if(newCateoriesList.size()==currentCategories.length){
+                    throw new ActivityEngineRuntimeException();
+                }
+                String[] newCategories=new String[newCateoriesList.size()];
+                newCateoriesList.toArray(newCategories);
+                activitySpaceBusinessCategoriesProperty.setPropertyValue(newCategories);
+                activitySpaceBco.updateProperty(activitySpaceBusinessCategoriesProperty, false);
+            }else{
+                activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityCategories, new String[]{categoryName}, false);
+            }
+            return true;
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public String[] getActivitySpaceExtendFeatureCategories() throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
-	        if(activitySpaceExtendFeatureCategoriesProperty==null){
-	        	return null;
-	        }else{
-	        	return (String[])activitySpaceExtendFeatureCategoriesProperty.getPropertyValue();
-	        }
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public String[] getActivitySpaceExtendFeatureCategories() throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
+            if(activitySpaceExtendFeatureCategoriesProperty==null){
+                return null;
+            }else{
+                return (String[])activitySpaceExtendFeatureCategoriesProperty.getPropertyValue();
+            }
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean setActivitySpaceExtendFeatureCategories(String[] categories) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-		if(categories==null){
-			throw new ActivityEngineRuntimeException();
-		}
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
-	        if(activitySpaceExtendFeatureCategoriesProperty!=null){
-	        	activitySpaceExtendFeatureCategoriesProperty.setPropertyValue(categories);
-	        	activitySpaceBco.updateProperty(activitySpaceExtendFeatureCategoriesProperty, false);
-	        }else{
-	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories, categories, false);
-	        }
-	        return true;
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public boolean setActivitySpaceExtendFeatureCategories(String[] categories) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        if(categories==null){
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
+            if(activitySpaceExtendFeatureCategoriesProperty!=null){
+                activitySpaceExtendFeatureCategoriesProperty.setPropertyValue(categories);
+                activitySpaceBco.updateProperty(activitySpaceExtendFeatureCategoriesProperty, false);
+            }else{
+                activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories, categories, false);
+            }
+            return true;
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean addActivitySpaceExtendFeatureCategory(String categoryName) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-		if(categoryName==null){
-			throw new ActivityEngineRuntimeException();
-		}
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
-	        if(activitySpaceExtendFeatureCategoriesProperty!=null){
-	        	String[] currentCategories=(String[])activitySpaceExtendFeatureCategoriesProperty.getPropertyValue();
-	        	String[] newCategories=new String[currentCategories.length+1];
-	        	for(int i=0;i<currentCategories.length;i++){
-	        		String currentCategory=currentCategories[i];
-	        		if(currentCategory.equals(categoryName)){
-	        			return false;
-	        		}else{
-	        			newCategories[i]=currentCategories[i];
-	        		}
-	        	}
-	        	newCategories[newCategories.length-1]=categoryName;
-	        	activitySpaceExtendFeatureCategoriesProperty.setPropertyValue(newCategories);
-	        	activitySpaceBco.updateProperty(activitySpaceExtendFeatureCategoriesProperty, false);
-	        }else{
-	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories, new String[]{categoryName}, false);
-	        }
-	        return true;
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public boolean addActivitySpaceExtendFeatureCategory(String categoryName) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        if(categoryName==null){
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
+            if(activitySpaceExtendFeatureCategoriesProperty!=null){
+                String[] currentCategories=(String[])activitySpaceExtendFeatureCategoriesProperty.getPropertyValue();
+                String[] newCategories=new String[currentCategories.length+1];
+                for(int i=0;i<currentCategories.length;i++){
+                    String currentCategory=currentCategories[i];
+                    if(currentCategory.equals(categoryName)){
+                        return false;
+                    }else{
+                        newCategories[i]=currentCategories[i];
+                    }
+                }
+                newCategories[newCategories.length-1]=categoryName;
+                activitySpaceExtendFeatureCategoriesProperty.setPropertyValue(newCategories);
+                activitySpaceBco.updateProperty(activitySpaceExtendFeatureCategoriesProperty, false);
+            }else{
+                activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories, new String[]{categoryName}, false);
+            }
+            return true;
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 
-	@Override
-	public boolean removeActivitySpaceExtendFeatureCategory(String categoryName) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
-		try {
-	        initContentRepositoryParameter();
-	    } catch (ContentReposityRuntimeException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }
-		if(categoryName==null){
-			throw new ActivityEngineRuntimeException();
-		}
-	    ContentSpace metaDataContentSpace = null;
-	    try {
-	        metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
-	                CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-	        RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-	        if(activitySpaceDefineObject==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-	        if(activitySpaceBco==null){
-	            throw new ActivityEngineRuntimeException();
-	        }
-	        ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
-	        if(activitySpaceExtendFeatureCategoriesProperty!=null){
-	        	String[] currentCategories=(String[])activitySpaceExtendFeatureCategoriesProperty.getPropertyValue();
-	        	List<String> newCateoriesList=new ArrayList<String>();
-	        	for(int i=0;i<currentCategories.length;i++){
-	        		String currentCategory=currentCategories[i];
-	        		if(!currentCategory.equals(categoryName)){
-	        			newCateoriesList.add(categoryName);
-	        		}
-	        	}
-	        	if(newCateoriesList.size()==currentCategories.length){
-	        		throw new ActivityEngineRuntimeException();
-	        	}
-	        	String[] newCategories=new String[newCateoriesList.size()];
-	        	newCateoriesList.toArray(newCategories);
-	        	activitySpaceExtendFeatureCategoriesProperty.setPropertyValue(newCategories);
-	        	activitySpaceBco.updateProperty(activitySpaceExtendFeatureCategoriesProperty, false);
-	        }else{
-	        	activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories, new String[]{categoryName}, false);
-	        }
-	        return true;
-	    } catch (ContentReposityException e) {
-	        e.printStackTrace();
-	        throw new ActivityEngineRuntimeException();
-	    }finally{
-	        metaDataContentSpace.closeContentSpace();
-	    }
-	}
+    @Override
+    public boolean removeActivitySpaceExtendFeatureCategory(String categoryName) throws ActivityEngineRuntimeException, ActivityEngineActivityException {
+        try {
+            initContentRepositoryParameter();
+        } catch (ContentReposityRuntimeException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }
+        if(categoryName==null){
+            throw new ActivityEngineRuntimeException();
+        }
+        ContentSpace metaDataContentSpace = null;
+        try {
+            metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+                    CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+            RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+            if(activitySpaceDefineObject==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+            if(activitySpaceBco==null){
+                throw new ActivityEngineRuntimeException();
+            }
+            ContentObjectProperty activitySpaceExtendFeatureCategoriesProperty=activitySpaceBco.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories);
+            if(activitySpaceExtendFeatureCategoriesProperty!=null){
+                String[] currentCategories=(String[])activitySpaceExtendFeatureCategoriesProperty.getPropertyValue();
+                List<String> newCateoriesList=new ArrayList<String>();
+                for(int i=0;i<currentCategories.length;i++){
+                    String currentCategory=currentCategories[i];
+                    if(!currentCategory.equals(categoryName)){
+                        newCateoriesList.add(categoryName);
+                    }
+                }
+                if(newCateoriesList.size()==currentCategories.length){
+                    throw new ActivityEngineRuntimeException();
+                }
+                String[] newCategories=new String[newCateoriesList.size()];
+                newCateoriesList.toArray(newCategories);
+                activitySpaceExtendFeatureCategoriesProperty.setPropertyValue(newCategories);
+                activitySpaceBco.updateProperty(activitySpaceExtendFeatureCategoriesProperty, false);
+            }else{
+                activitySpaceBco.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ExtendFeatureCategories, new String[]{categoryName}, false);
+            }
+            return true;
+        } catch (ContentReposityException e) {
+            e.printStackTrace();
+            throw new ActivityEngineRuntimeException();
+        }finally{
+            metaDataContentSpace.closeContentSpace();
+        }
+    }
 }
