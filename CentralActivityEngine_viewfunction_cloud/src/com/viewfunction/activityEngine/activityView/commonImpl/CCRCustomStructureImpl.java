@@ -60,94 +60,61 @@ public class CCRCustomStructureImpl implements CustomStructure{
 	@Override
 	public List<CustomStructure> getSubCustomStructures() throws ActivityEngineRuntimeException, ActivityEngineDataException{
 		List<CustomStructure> customeStructuresList=new ArrayList<CustomStructure>();
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customStructureContainerObj;
-			try {
-				customStructureContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
-				if(customStructureContainerObj==null){				
-					customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);				
-				}					
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
+				if(customStructureContainerObj==null){
+					customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);
+				}
 				List<BaseContentObject> subCustomStructuresList=customStructureContainerObj.getSubContentObjects(null);
 				for(BaseContentObject currentStructureBaseContentObject:subCustomStructuresList){
-					if(!currentStructureBaseContentObject.getContentObjectName().equals(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){						
+					if(!currentStructureBaseContentObject.getContentObjectName().equals(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){
 						JCRContentObjectImpl jcrContentObjectImpl=(JCRContentObjectImpl)this.getStorageContentObject();
-						String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();						
-						CCRCustomStructureImpl currentCustomStructure=new CCRCustomStructureImpl(currentStructureBaseContentObject.getContentObjectName(),customStructureParentPath,this.activitySpaceName);						
-						currentCustomStructure.setStorageContentObject(currentStructureBaseContentObject);						
-						customeStructuresList.add(currentCustomStructure);						
-					}					
-				}				
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			} catch (RepositoryException e) {				
-				e.printStackTrace();
-				throw new ActivityEngineDataException();
-			}						
-		}else{	
-		*/	
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
-				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}				
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
+						String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();
+						CCRCustomStructureImpl currentCustomStructure=new CCRCustomStructureImpl(currentStructureBaseContentObject.getContentObjectName(),customStructureParentPath,this.activitySpaceName);
+						currentCustomStructure.setStorageContentObject(currentStructureBaseContentObject);
+						customeStructuresList.add(currentCustomStructure);
 					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
 				}
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);			
-					if(customStructureContainerObj==null){				
-						customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);				
-					}
-					List<BaseContentObject> subCustomStructuresList=customStructureContainerObj.getSubContentObjects(null);
-					for(BaseContentObject currentStructureBaseContentObject:subCustomStructuresList){
-						if(!currentStructureBaseContentObject.getContentObjectName().equals(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){						
-							JCRContentObjectImpl jcrContentObjectImpl=(JCRContentObjectImpl)this.getStorageContentObject();
-							String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();						
-							CCRCustomStructureImpl currentCustomStructure=new CCRCustomStructureImpl(currentStructureBaseContentObject.getContentObjectName(),customStructureParentPath,this.activitySpaceName);						
-							currentCustomStructure.setStorageContentObject(currentStructureBaseContentObject);						
-							customeStructuresList.add(currentCustomStructure);						
-						}					
-					}						
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			} catch (RepositoryException e) {				
-				e.printStackTrace();
-				throw new ActivityEngineDataException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}	
-			
-			
-			
-		//}		
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		} catch (RepositoryException e) {
+			e.printStackTrace();
+			throw new ActivityEngineDataException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return customeStructuresList;
 	}
 
@@ -156,94 +123,61 @@ public class CCRCustomStructureImpl implements CustomStructure{
 		if(structureName.endsWith(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){
 			return null;
 		}
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customStructureContainerObj;
-			try {
-				customStructureContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
-				if(customStructureContainerObj==null){				
-					customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);				
-				}					
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
+				if(customStructureContainerObj==null){
+					customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);
+				}
 				BaseContentObject targetContentObject=customStructureContainerObj.getSubContentObject(structureName);
 				if(targetContentObject==null){
 					return null;
 				}else{
 					JCRContentObjectImpl jcrContentObjectImpl=(JCRContentObjectImpl)this.getStorageContentObject();
-					String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();						
-					CCRCustomStructureImpl targetCustomStructure=new CCRCustomStructureImpl(structureName,customStructureParentPath,this.activitySpaceName);						
+					String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();
+					CCRCustomStructureImpl targetCustomStructure=new CCRCustomStructureImpl(structureName,customStructureParentPath,this.activitySpaceName);
 					targetCustomStructure.setStorageContentObject(targetContentObject);
 					return targetCustomStructure;
-				}				
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			} catch (RepositoryException e) {				
-				e.printStackTrace();
-				throw new ActivityEngineDataException();
-			}						
-		}else{
-			
-		*/	
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
 				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}					
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}				
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);			
-					if(customStructureContainerObj==null){				
-						customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);				
-					}
-					BaseContentObject targetContentObject=customStructureContainerObj.getSubContentObject(structureName);
-					if(targetContentObject==null){
-						return null;
-					}else{
-						JCRContentObjectImpl jcrContentObjectImpl=(JCRContentObjectImpl)this.getStorageContentObject();
-						String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();						
-						CCRCustomStructureImpl targetCustomStructure=new CCRCustomStructureImpl(structureName,customStructureParentPath,this.activitySpaceName);						
-						targetCustomStructure.setStorageContentObject(targetContentObject);
-						return targetCustomStructure;
-					}				
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			} catch (RepositoryException e) {				
-				e.printStackTrace();
-				throw new ActivityEngineDataException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}	
-		
-		
-		//}		
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		} catch (RepositoryException e) {
+			e.printStackTrace();
+			throw new ActivityEngineDataException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return null;
 	}
 
@@ -252,16 +186,41 @@ public class CCRCustomStructureImpl implements CustomStructure{
 		if(structureName.endsWith(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){
 			return false;
 		}
-		
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customStructureContainerObj;
-			try {
-				customStructureContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
-				if(customStructureContainerObj==null){				
-					customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);				
-				}					
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
+				if(customStructureContainerObj==null){
+					customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);
+				}
 				BaseContentObject targetContentObject=customStructureContainerObj.getSubContentObject(structureName);
 				if(targetContentObject!=null){
 					return false;
@@ -269,69 +228,14 @@ public class CCRCustomStructureImpl implements CustomStructure{
 					targetContentObject=customStructureContainerObj.addSubContentObject(structureName, null, false);
 					targetContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);
 					return true;
-				}				
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			} 					
-		}else{	
-		*/	
-			
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
 				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}					
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}	
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);			
-					if(customStructureContainerObj==null){				
-						customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);				
-					}
-					BaseContentObject targetContentObject=customStructureContainerObj.getSubContentObject(structureName);
-					if(targetContentObject!=null){
-						return false;
-					}else{
-						targetContentObject=customStructureContainerObj.addSubContentObject(structureName, null, false);
-						targetContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);
-						return true;
-					}		
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			} finally{
-				metaDataContentSpace.closeContentSpace();			
-			}	
-		
-		
-		
-		//}		
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		} finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return false;
 	}
 
@@ -340,542 +244,349 @@ public class CCRCustomStructureImpl implements CustomStructure{
 		if(structureName.endsWith(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){
 			return false;
 		}
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customStructureContainerObj;
-			try {
-				customStructureContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
-				if(customStructureContainerObj==null){				
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);
+				if(customStructureContainerObj==null){
 					customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);
 					return false;
-				}					
-				boolean deleteResult=customStructureContainerObj.removeSubContentObject(structureName, false);
-				return deleteResult;				
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			}					
-		}else{
-		*/	
-			
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
 				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}				
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}						
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customStructureContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);			
-					if(customStructureContainerObj==null){				
-						customStructureContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);				
-						return false;
-					}					
-					boolean deleteResult=customStructureContainerObj.removeSubContentObject(structureName, false);
-					return deleteResult;	
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}	
-		//}		
+				boolean deleteResult=customStructureContainerObj.removeSubContentObject(structureName, false);
+				return deleteResult;
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return false;
 	}
 
 	@Override
 	public boolean addCustomAttribute(CustomAttribute customAttribute) throws ActivityEngineRuntimeException, ActivityEngineDataException {
-		
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customAttributesContainerObj;
-			try {
-				customAttributesContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
-				if(customAttributesContainerObj==null){				
-					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);				
-				}	
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
+				if(customAttributesContainerObj==null){
+					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);
+				}
 				ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(customAttribute.getAttributeName());
 				if(targetAttributeProperty!=null){
-					throw new ActivityEngineDataException();					
+					throw new ActivityEngineDataException();
 				}else{
-					ContentObjectProperty resultCustomAttribute=customAttributesContainerObj.addProperty(customAttribute.getAttributeName(), customAttribute.getAttributeValue(), false);	
+					ContentObjectProperty resultCustomAttribute=customAttributesContainerObj.addProperty(customAttribute.getAttributeName(), customAttribute.getAttributeValue(), false);
 					if(resultCustomAttribute.getPropertyName().equals(customAttribute.getAttributeName())){
 						return true;
 					}else{
 						return false;
-					}				
-				}	
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			}						
-		}else{
-		*/	
-			
-			
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
-				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}									
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
 					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}					
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);			
-					if(customAttributesContainerObj==null){				
-						customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);				
-					}	
-					ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(customAttribute.getAttributeName());
-					if(targetAttributeProperty!=null){
-						throw new ActivityEngineDataException();					
-					}else{
-						ContentObjectProperty resultCustomAttribute=customAttributesContainerObj.addProperty(customAttribute.getAttributeName(), customAttribute.getAttributeValue(), false);	
-						if(resultCustomAttribute.getPropertyName().equals(customAttribute.getAttributeName())){
-							return true;
-						}else{
-							return false;
-						}				
-					}						
-					
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}	
-			
-			
-		//}		
+				}
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return false;		
 	}
 
 	@Override
 	public boolean updateCustomAttribute(CustomAttribute customAttribute) throws ActivityEngineRuntimeException, ActivityEngineDataException {
-		
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customAttributesContainerObj;
-			try {
-				customAttributesContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
-				if(customAttributesContainerObj==null){				
-					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);				
-				}						
-				ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(customAttribute.getAttributeName());				
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
+				if(customAttributesContainerObj==null){
+					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);
+				}
+				ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(customAttribute.getAttributeName());
 				if(targetAttributeProperty==null){
-					throw new ActivityEngineDataException();					
+					throw new ActivityEngineDataException();
 				}else{
 					if(targetAttributeProperty.getPropertyType()!=customAttribute.getAttributeType()){
-						throw new ActivityEngineDataException();					
+						throw new ActivityEngineDataException();
 					}
 					if(targetAttributeProperty.isMultiple()!=customAttribute.isArrayAttribute()){
 						throw new ActivityEngineDataException();
-					}				
+					}
 					ContentObjectProperty newValueProperty=ContentComponentFactory.createContentObjectProperty();
 					newValueProperty.setMultiple(customAttribute.isArrayAttribute());
 					newValueProperty.setPropertyName(customAttribute.getAttributeName());
 					newValueProperty.setPropertyType(customAttribute.getAttributeType());
-					newValueProperty.setPropertyValue(customAttribute.getAttributeValue());				
-					ContentObjectProperty resultCustomAttribute=customAttributesContainerObj.updateProperty(newValueProperty, false);					
+					newValueProperty.setPropertyValue(customAttribute.getAttributeValue());
+					ContentObjectProperty resultCustomAttribute=customAttributesContainerObj.updateProperty(newValueProperty, false);
 					if(resultCustomAttribute.getPropertyName().equals(customAttribute.getAttributeName())){
 						return true;
 					}else{
 						return false;
-					}								
-				}		
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			}						
-		}else{
-		*/	
-			
-			
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
+					}
 				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}							
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}								
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);			
-					if(customAttributesContainerObj==null){				
-						customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);				
-					}						
-					ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(customAttribute.getAttributeName());				
-					if(targetAttributeProperty==null){
-						throw new ActivityEngineDataException();					
-					}else{
-						if(targetAttributeProperty.getPropertyType()!=customAttribute.getAttributeType()){
-							throw new ActivityEngineDataException();					
-						}
-						if(targetAttributeProperty.isMultiple()!=customAttribute.isArrayAttribute()){
-							throw new ActivityEngineDataException();
-						}				
-						ContentObjectProperty newValueProperty=ContentComponentFactory.createContentObjectProperty();
-						newValueProperty.setMultiple(customAttribute.isArrayAttribute());
-						newValueProperty.setPropertyName(customAttribute.getAttributeName());
-						newValueProperty.setPropertyType(customAttribute.getAttributeType());
-						newValueProperty.setPropertyValue(customAttribute.getAttributeValue());				
-						ContentObjectProperty resultCustomAttribute=customAttributesContainerObj.updateProperty(newValueProperty, false);					
-						if(resultCustomAttribute.getPropertyName().equals(customAttribute.getAttributeName())){
-							return true;
-						}else{
-							return false;
-						}						
-					}
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}				
-		//}		
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return false;
 	}
 
 	@Override
 	public boolean deleteCustomAttribute(String attributeName) throws ActivityEngineRuntimeException, ActivityEngineDataException {
-		
-		
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customAttributesContainerObj;
-			try {
-				customAttributesContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
-				if(customAttributesContainerObj==null){				
-					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);				
-				}					
-				ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(attributeName);				
-				if(targetAttributeProperty==null){
-					throw new ActivityEngineDataException();					
-				}else{
-					boolean deleteResult=customAttributesContainerObj.removeProperty(attributeName, false);				
-					return deleteResult;				
-				}				
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			}						
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
 		}else{
-		*/	
-			
-			
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
-				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}							
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}								
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);			
-					if(customAttributesContainerObj==null){				
-						customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);				
-					}						
-					ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(attributeName);				
-					if(targetAttributeProperty==null){
-						throw new ActivityEngineDataException();					
-					}else{
-						boolean deleteResult=customAttributesContainerObj.removeProperty(attributeName, false);				
-						return deleteResult;				
-					}				
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
 				throw new ActivityEngineRuntimeException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}				
-		//}		
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
+				if(customAttributesContainerObj==null){
+					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);
+				}
+				ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(attributeName);
+				if(targetAttributeProperty==null){
+					throw new ActivityEngineDataException();
+				}else{
+					boolean deleteResult=customAttributesContainerObj.removeProperty(attributeName, false);
+					return deleteResult;
+				}
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return false;
 	}
 
 	@Override
 	public CustomAttribute getCustomAttribute(String attributeName) throws ActivityEngineRuntimeException {
-		/*
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customAttributesContainerObj;
-			try {
-				customAttributesContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);								
-				if(customAttributesContainerObj==null){	
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
+				if(customAttributesContainerObj==null){
 					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);
 					return null;
-				}			
-				ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(attributeName);				
+				}
+				ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(attributeName);
 				if(targetAttributeProperty==null){
-					return null;					
-				}else{				
-					CustomAttribute targetCustomAttribute=ActivityComponentFactory.createCustomAttribute();				
+					return null;
+				}else{
+					CustomAttribute targetCustomAttribute=ActivityComponentFactory.createCustomAttribute();
 					targetCustomAttribute.setArrayAttribute(targetAttributeProperty.isMultiple());
 					targetCustomAttribute.setAttributeName(targetAttributeProperty.getPropertyName());
 					targetCustomAttribute.setAttributeType(targetAttributeProperty.getPropertyType());
-					targetCustomAttribute.setAttributeValue(targetAttributeProperty.getPropertyValue());				
-					return targetCustomAttribute;				
-				}			
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			}						
-		}else{
-		*/	
-			
-			
-			
-			
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
+					targetCustomAttribute.setAttributeValue(targetAttributeProperty.getPropertyValue());
+					return targetCustomAttribute;
 				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}							
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}								
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
-					if(customAttributesContainerObj==null){		
-						customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);
-						return null;
-					}							
-					ContentObjectProperty targetAttributeProperty=customAttributesContainerObj.getProperty(attributeName);				
-					if(targetAttributeProperty==null){
-						return null;					
-					}else{				
-						CustomAttribute targetCustomAttribute=ActivityComponentFactory.createCustomAttribute();				
-						targetCustomAttribute.setArrayAttribute(targetAttributeProperty.isMultiple());
-						targetCustomAttribute.setAttributeName(targetAttributeProperty.getPropertyName());
-						targetCustomAttribute.setAttributeType(targetAttributeProperty.getPropertyType());
-						targetCustomAttribute.setAttributeValue(targetAttributeProperty.getPropertyValue());				
-						return targetCustomAttribute;				
-					}			
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}				
-		//}
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return null;
 	}
 
 	@Override
 	public List<CustomAttribute> getCustomAttributes() throws ActivityEngineRuntimeException {
 		List<CustomAttribute> customAttribute=new ArrayList<CustomAttribute>();
-		
-		
-		/*
-		
-		if(this.getStorageContentObject()!=null){
-			BaseContentObject storageContentObject=this.getStorageContentObject();
-			BaseContentObject customAttributesContainerObj;
-			try {
-				customAttributesContainerObj = storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);								
-				if(customAttributesContainerObj==null){	
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}
+		String storageObjectAbsPath=null;
+		if(this.getStructureId()!=null){
+			storageObjectAbsPath=this.getStructureId();
+		}else{
+			String storageObjectParentPath=this.getStructureParentPath();
+			if(!storageObjectParentPath.endsWith("/")){
+				storageObjectParentPath=storageObjectParentPath+"/";
+			}
+			storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+		}
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+			if(storageContentObject!=null){
+				this.setStorageContentObject(storageContentObject);
+				BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
+				if(customAttributesContainerObj==null){
 					customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);
 					return null;
-				}			
+				}
 				List<ContentObjectProperty> customAttributesPropList=customAttributesContainerObj.getProperties();
 				for(ContentObjectProperty currentContentObjectProperty:customAttributesPropList){
-					CustomAttribute targetCustomAttribute=ActivityComponentFactory.createCustomAttribute();				
+					CustomAttribute targetCustomAttribute=ActivityComponentFactory.createCustomAttribute();
 					targetCustomAttribute.setArrayAttribute(currentContentObjectProperty.isMultiple());
 					targetCustomAttribute.setAttributeName(currentContentObjectProperty.getPropertyName());
 					targetCustomAttribute.setAttributeType(currentContentObjectProperty.getPropertyType());
-					targetCustomAttribute.setAttributeValue(currentContentObjectProperty.getPropertyValue());				
-					customAttribute.add(targetCustomAttribute);				
-				}			
-			} catch (ContentReposityException e) {
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();				
-			}						
-		}else{
-		*/	
-			
-			
-			
-			
-			try {
-				initContentRepositoryParameter();
-			} catch (ContentReposityRuntimeException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();	
-			}		
-			ContentSpace metaDataContentSpace = null;
-			try {
-				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-				if(activitySpaceDefineObject==null){
-					throw new ActivityEngineRuntimeException();
+					targetCustomAttribute.setAttributeValue(currentContentObjectProperty.getPropertyValue());
+					customAttribute.add(targetCustomAttribute);
 				}
-				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-				if(activitySpaceBco==null){
-					throw new ActivityEngineRuntimeException();
-				}							
-				String storageObjectAbsPath=null;
-				if(this.getStructureId()!=null){
-					storageObjectAbsPath=this.getStructureId();
-				}else{
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();					
-				}								
-				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);				
-				if(storageContentObject!=null){
-					this.setStorageContentObject(storageContentObject);						
-					BaseContentObject customAttributesContainerObj=storageContentObject.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore);
-					if(customAttributesContainerObj==null){		
-						customAttributesContainerObj=storageContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore, null, false);
-						return null;
-					}							
-					List<ContentObjectProperty> customAttributesPropList=customAttributesContainerObj.getProperties();
-					for(ContentObjectProperty currentContentObjectProperty:customAttributesPropList){
-						CustomAttribute targetCustomAttribute=ActivityComponentFactory.createCustomAttribute();				
-						targetCustomAttribute.setArrayAttribute(currentContentObjectProperty.isMultiple());
-						targetCustomAttribute.setAttributeName(currentContentObjectProperty.getPropertyName());
-						targetCustomAttribute.setAttributeType(currentContentObjectProperty.getPropertyType());
-						targetCustomAttribute.setAttributeValue(currentContentObjectProperty.getPropertyValue());				
-						customAttribute.add(targetCustomAttribute);				
-					}	
-				}			
-			} catch (ContentReposityException e) {			
-				e.printStackTrace();
-				throw new ActivityEngineRuntimeException();
-			}finally{
-				metaDataContentSpace.closeContentSpace();			
-			}				
-			
-			
-		//}
+			}
+		} catch (ContentReposityException e) {
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();
+		}
 		return customAttribute;
 	}
 
@@ -899,60 +610,44 @@ public class CCRCustomStructureImpl implements CustomStructure{
 	public String getStructureId() throws ActivityEngineRuntimeException {
 		if(this.structureId!=null){
 			return this.structureId;
-		}else{		
-			
-			/*
-			if(this.getStorageContentObject()!=null){
-				try {				
-					BaseContentObject storageContentObject=this.getStorageContentObject();				
-					JCRContentObjectImpl _JCRStorageContentObject=(JCRContentObjectImpl)storageContentObject;				
-					String structureId=_JCRStorageContentObject.getJcrNode().getPath();
-					return structureId;					
-				} catch (RepositoryException e) {					
-					e.printStackTrace();
+		}else{
+			try {
+				initContentRepositoryParameter();
+			} catch (ContentReposityRuntimeException e) {
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+			}
+			ContentSpace metaDataContentSpace = null;
+			try {
+				metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,
+						CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+				RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+				if(activitySpaceDefineObject==null){
 					throw new ActivityEngineRuntimeException();
-				}				
-			}else{	
-			*/	
-				
-				
-				try {
-					initContentRepositoryParameter();
-				} catch (ContentReposityRuntimeException e) {			
-					e.printStackTrace();
-					throw new ActivityEngineRuntimeException();	
-				}		
-				ContentSpace metaDataContentSpace = null;
-				try {
-					metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
-							CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
-					RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
-					if(activitySpaceDefineObject==null){
-						throw new ActivityEngineRuntimeException();
-					}
-					BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
-					if(activitySpaceBco==null){
-						throw new ActivityEngineRuntimeException();
-					}							
-					String storageObjectParentPath=this.getStructureParentPath();				
-					if(!storageObjectParentPath.endsWith("/")){
-						storageObjectParentPath=storageObjectParentPath+"/";
-					}
-					String storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();		
-					BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
-					JCRContentObjectImpl _JCRStorageContentObject=(JCRContentObjectImpl)storageContentObject;				
-					String structureId=_JCRStorageContentObject.getJcrNode().getPath();
-					return structureId;						
-				} catch (ContentReposityException e) {			
-					e.printStackTrace();
+				}
+				BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+				if(activitySpaceBco==null){
 					throw new ActivityEngineRuntimeException();
-				} catch (RepositoryException e) {					
-					e.printStackTrace();
-					throw new ActivityEngineRuntimeException();
-				}finally{
-					metaDataContentSpace.closeContentSpace();			
-				}	
-			//}				
+				}
+				String storageObjectParentPath=this.getStructureParentPath();
+				if(!storageObjectParentPath.endsWith("/")){
+					storageObjectParentPath=storageObjectParentPath+"/";
+				}
+				String storageObjectAbsPath=storageObjectParentPath+CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore+"/"+this.getStructureName();
+				BaseContentObject storageContentObject=metaDataContentSpace.getContentObjectByAbsPath(storageObjectAbsPath);
+				JCRContentObjectImpl _JCRStorageContentObject=(JCRContentObjectImpl)storageContentObject;
+				String structureId=_JCRStorageContentObject.getJcrNode().getPath();
+				setStructureId(structureId);
+				return structureId;
+			} catch (ContentReposityException e) {
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+			} catch (RepositoryException e) {
+				e.printStackTrace();
+				throw new ActivityEngineRuntimeException();
+			}finally{
+				metaDataContentSpace.closeContentSpace();
+			}
 		}		
 	}
 

@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.util.*;
 
 import javax.jcr.PropertyType;
+import javax.jcr.RepositoryException;
 
 import com.viewfunction.activityEngine.activityBureau.ActivitySpace;
 import com.viewfunction.activityEngine.activityBureau.BusinessActivity;
@@ -21,7 +22,10 @@ import com.viewfunction.activityEngine.activityView.RoleQueue;
 import com.viewfunction.activityEngine.activityView.common.ActivityData;
 import com.viewfunction.activityEngine.activityView.common.ActivityStep;
 import com.viewfunction.activityEngine.activityView.common.ActivityStepDefinition;
+import com.viewfunction.activityEngine.activityView.common.CustomAttribute;
+import com.viewfunction.activityEngine.activityView.common.CustomStructure;
 import com.viewfunction.activityEngine.activityView.common.DataFieldDefinition;
+import com.viewfunction.activityEngine.activityView.commonImpl.CCRCustomStructureImpl;
 import com.viewfunction.activityEngine.activityView.commonImpl.CCR_CPRActivityStepImpl;
 import com.viewfunction.activityEngine.exception.ActivityEngineActivityException;
 import com.viewfunction.activityEngine.exception.ActivityEngineDataException;
@@ -39,6 +43,7 @@ import com.viewfunction.contentRepository.contentBureau.BaseContentObject;
 import com.viewfunction.contentRepository.contentBureau.ContentObjectProperty;
 import com.viewfunction.contentRepository.contentBureau.ContentSpace;
 import com.viewfunction.contentRepository.contentBureau.RootContentObject;
+import com.viewfunction.contentRepository.contentBureauImpl.JCRContentObjectImpl;
 import com.viewfunction.contentRepository.util.PerportyHandler;
 import com.viewfunction.contentRepository.util.exception.ContentReposityException;
 import com.viewfunction.contentRepository.util.exception.ContentReposityRuntimeException;
@@ -61,6 +66,10 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     private static final long serialVersionUID = 8884036178781460104L;
     private static String BUILDIN_ADMINISTRATOR_ACCOUNT;
     private static String BUILDIN_ADMINISTRATOR_ACCOUNT_PWD;
+    
+    private static final String BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE="BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE";
+    private static final String BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES="BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES";
+    private static final String BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES="BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES";
 
     private String activitySpaceName;
 
@@ -4728,4 +4737,257 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             metaDataContentSpace.closeContentSpace();
         }
     }
+
+	@Override
+	public List<CustomStructure> getCustomStructures() throws ActivityEngineRuntimeException, ActivityEngineDataException {
+		List<CustomStructure> customeStructuresList=new ArrayList<CustomStructure>();
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}	
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}		
+			BaseContentObject spaceCustomStructuresContainerObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);				
+			if(spaceCustomStructuresContainerObj==null){							
+				return customeStructuresList;
+			}
+			List<BaseContentObject> subCustomStructuresList=spaceCustomStructuresContainerObj.getSubContentObjects(null);
+			for(BaseContentObject currentStructureBaseContentObject:subCustomStructuresList){
+				if(!currentStructureBaseContentObject.getContentObjectName().equals(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){							
+					JCRContentObjectImpl jcrContentObjectImpl=(JCRContentObjectImpl)activitySpaceBco;					
+					String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();						
+					CCRCustomStructureImpl currentCustomStructure=new CCRCustomStructureImpl(currentStructureBaseContentObject.getContentObjectName(),customStructureParentPath,this.activitySpaceName);						
+					currentCustomStructure.setStorageContentObject(currentStructureBaseContentObject);						
+					customeStructuresList.add(currentCustomStructure);						
+				}					
+			}
+		} catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		} catch (RepositoryException e) {				
+			e.printStackTrace();
+			throw new ActivityEngineDataException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();			
+		}			
+		return customeStructuresList;
+	}
+
+	@Override
+	public CustomStructure getCustomStructure(String structureName) throws ActivityEngineRuntimeException, ActivityEngineDataException {
+		if(structureName.endsWith(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){
+			return null;
+		}
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}			
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}						
+			BaseContentObject spaceCustomStructuresContainerObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);				
+			if(spaceCustomStructuresContainerObj==null){							
+				return null;
+			}						
+			BaseContentObject currentStructureBaseContentObject=spaceCustomStructuresContainerObj.getSubContentObject(structureName);			
+			if(currentStructureBaseContentObject==null){
+				return null;
+			}else{
+				JCRContentObjectImpl jcrContentObjectImpl=(JCRContentObjectImpl)activitySpaceBco;					
+				String customStructureParentPath=jcrContentObjectImpl.getJcrNode().getPath();						
+				CCRCustomStructureImpl currentCustomStructure=new CCRCustomStructureImpl(currentStructureBaseContentObject.getContentObjectName(),customStructureParentPath,this.activitySpaceName);						
+				currentCustomStructure.setStorageContentObject(currentStructureBaseContentObject);
+				return currentCustomStructure;
+			}			
+		} catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		} catch (RepositoryException e) {				
+			e.printStackTrace();
+			throw new ActivityEngineDataException();
+		}finally{
+			metaDataContentSpace.closeContentSpace();			
+		}	
+	}
+
+	@Override
+	public boolean addCustomStructure(String structureName) throws ActivityEngineRuntimeException {
+		if(structureName.endsWith(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){
+			return false;
+		}
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}	
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}					
+			BaseContentObject spaceCustomStructuresContainerObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);				
+			if(spaceCustomStructuresContainerObj==null){							
+				spaceCustomStructuresContainerObj=activitySpaceBco.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);	
+			}					
+			BaseContentObject targetContentObject=spaceCustomStructuresContainerObj.getSubContentObject(structureName);
+			if(targetContentObject!=null){
+				return false;
+			}else{
+				targetContentObject=spaceCustomStructuresContainerObj.addSubContentObject(structureName, null, false);
+				targetContentObject.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);
+				return true;
+			}					
+		} catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		} finally{
+			metaDataContentSpace.closeContentSpace();			
+		}
+	}
+
+	@Override
+	public boolean deleteCustomStructure(String structureName) throws ActivityEngineRuntimeException {
+		if(structureName.endsWith(CCRActivityEngineConstant.ACTIVITYSPACE_CustomAttributeStore)){
+			return false;
+		}
+		try {
+			initContentRepositoryParameter();
+		} catch (ContentReposityRuntimeException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();	
+		}	
+		ContentSpace metaDataContentSpace = null;
+		try {
+			metaDataContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD, 
+					CCRActivityEngineConstant.ACTIVITYENGINE_METADATA_CONTENTSPACE);
+			RootContentObject activitySpaceDefineObject=metaDataContentSpace.getRootContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_DEFINATION_ROOTCONTENTOBJECT);
+			if(activitySpaceDefineObject==null){
+				throw new ActivityEngineRuntimeException();
+			}
+			BaseContentObject activitySpaceBco=activitySpaceDefineObject.getSubContentObject(this.activitySpaceName);
+			if(activitySpaceBco==null){
+				throw new ActivityEngineRuntimeException();
+			}						
+			BaseContentObject spaceCustomStructuresContainerObj=activitySpaceBco.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore);				
+			if(spaceCustomStructuresContainerObj==null){							
+				spaceCustomStructuresContainerObj=activitySpaceBco.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_CustomStructureStore, null, false);	
+				return false;
+			}					
+			BaseContentObject targetContentObject=spaceCustomStructuresContainerObj.getSubContentObject(structureName);
+			if(targetContentObject==null){
+				return false;
+			}else{
+				boolean deleteResult=spaceCustomStructuresContainerObj.removeSubContentObject(structureName, false);
+				return deleteResult;
+			}					
+		} catch (ContentReposityException e) {			
+			e.printStackTrace();
+			throw new ActivityEngineRuntimeException();
+		} finally{
+			metaDataContentSpace.closeContentSpace();			
+		}	
+	}
+
+	@Override
+	public Map<String, String> getBusinessActivityDefinitionStepProcessEditorsInfo(String activityType) throws ActivityEngineRuntimeException, ActivityEngineDataException {
+		Map<String,String> stepProcessEditorsInfoMap=new HashMap<String,String>();
+		CustomStructure buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+		if(buildInSpaceDefinitionsStructure!=null){
+			CustomStructure stepEditorsStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES);
+			if(stepEditorsStructures!=null){
+				CustomStructure activityTypeStepEditorsStructure=stepEditorsStructures.getSubCustomStructure(activityType);
+				if(activityTypeStepEditorsStructure!=null){
+					List<CustomAttribute> stepProcessEditorsList=activityTypeStepEditorsStructure.getCustomAttributes();
+					if(stepProcessEditorsList!=null){
+						for(CustomAttribute currentCustomAttribute:stepProcessEditorsList){
+							String stepName=currentCustomAttribute.getAttributeName();
+							String stepProcessEditor=currentCustomAttribute.getAttributeValue().toString();
+							stepProcessEditorsInfoMap.put(stepName, stepProcessEditor);
+						}
+					}					
+				}				
+			}			
+		}
+		return stepProcessEditorsInfoMap;
+	}
+
+	@Override
+	public boolean setBusinessActivityDefinitionStepProcessEditorInfo(String activityType,Map<String, String> stepProcessEditorsInfo) throws ActivityEngineRuntimeException, ActivityEngineDataException {
+		if(stepProcessEditorsInfo==null){
+			return false;
+		}		
+		CustomStructure buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+		if(buildInSpaceDefinitionsStructure==null){
+			this.addCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+			buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);			
+		}
+		CustomStructure stepEditorsStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES);
+		if(stepEditorsStructures==null){
+			buildInSpaceDefinitionsStructure.addSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES);
+			stepEditorsStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES);
+		}		
+		stepEditorsStructures.deleteSubCustomStructure(activityType);
+		stepEditorsStructures.addSubCustomStructure(activityType);		
+		CustomStructure activityTypeStepEditorsStructure=stepEditorsStructures.getSubCustomStructure(activityType);		
+		Set<String> stepNameSet=stepProcessEditorsInfo.keySet();		
+		Iterator<String> stepNameIterator=stepNameSet.iterator();
+		
+		while(stepNameIterator.hasNext()){
+			String stepName=stepNameIterator.next();			
+			String stepEditor=stepProcessEditorsInfo.get(stepName);			
+			CustomAttribute stepEditorAttribute=ActivityComponentFactory.createCustomAttribute();			
+			stepEditorAttribute.setArrayAttribute(false);
+			stepEditorAttribute.setAttributeName(stepName);			
+			stepEditorAttribute.setAttributeValue(stepEditor);
+			activityTypeStepEditorsStructure.addCustomAttribute(stepEditorAttribute);			
+		}		
+		
+		return true;
+	}
+
+	@Override
+	public CustomStructure getBusinessActivityDefinitionGlobalCustomStructure(String activityType) throws ActivityEngineRuntimeException, ActivityEngineDataException {
+		CustomStructure buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+		if(buildInSpaceDefinitionsStructure!=null){
+			CustomStructure globalStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES);
+			if(globalStructures!=null){
+				return globalStructures.getSubCustomStructure(activityType);
+			}else{
+				return null;
+			}			
+		}else{
+			return null;
+		}
+	}
 }

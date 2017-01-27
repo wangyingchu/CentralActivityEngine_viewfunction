@@ -10,6 +10,7 @@ import com.viewfunction.activityEngine.activityView.RoleQueue;
 import com.viewfunction.activityEngine.activityView.common.ActivityData;
 import com.viewfunction.activityEngine.activityView.common.ActivityStep;
 import com.viewfunction.activityEngine.activityView.common.ActivityStepDefinition;
+import com.viewfunction.activityEngine.activityView.common.CustomStructure;
 import com.viewfunction.activityEngine.activityView.common.DataFieldDefinition;
 import com.viewfunction.activityEngine.exception.ActivityEngineActivityException;
 import com.viewfunction.activityEngine.exception.ActivityEngineDataException;
@@ -112,5 +113,12 @@ public interface ActivitySpace {
 	public boolean addActivitySpaceExtendFeatureCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
 	public boolean removeActivitySpaceExtendFeatureCategory(String categoryName)throws ActivityEngineRuntimeException, ActivityEngineActivityException;
 	
+	public List<CustomStructure> getCustomStructures()throws ActivityEngineRuntimeException, ActivityEngineDataException;	
+	public CustomStructure getCustomStructure(String structureName) throws ActivityEngineRuntimeException, ActivityEngineDataException;	
+	public boolean addCustomStructure(String structureName) throws ActivityEngineRuntimeException;	
+	public boolean deleteCustomStructure(String structureName) throws ActivityEngineRuntimeException;	
 	
+	public Map<String,String> getBusinessActivityDefinitionStepProcessEditorsInfo(String activityType) throws ActivityEngineRuntimeException, ActivityEngineDataException;
+	public boolean setBusinessActivityDefinitionStepProcessEditorInfo(String activityType,Map<String,String> stepProcessEditorsInfo) throws ActivityEngineRuntimeException, ActivityEngineDataException;	
+	public CustomStructure getBusinessActivityDefinitionGlobalCustomStructure(String activityType) throws ActivityEngineRuntimeException, ActivityEngineDataException;	
 }
