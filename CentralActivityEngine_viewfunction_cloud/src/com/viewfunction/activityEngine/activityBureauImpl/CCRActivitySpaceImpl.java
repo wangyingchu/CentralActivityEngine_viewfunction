@@ -69,6 +69,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     
     private static final String BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE="BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE";
     private static final String BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES="BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES";
+    private static final String BUILDIN_ACTIVITYDEFINITIONS_STEPS_CUSTOMSTRUCTURES="BUILDIN_ACTIVITYDEFINITIONS_STEPS_CUSTOMSTRUCTURES";
     private static final String BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES="BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES";
 
     private String activitySpaceName;
@@ -4979,15 +4980,46 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 	@Override
 	public CustomStructure getBusinessActivityDefinitionGlobalCustomStructure(String activityType) throws ActivityEngineRuntimeException, ActivityEngineDataException {
 		CustomStructure buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
-		if(buildInSpaceDefinitionsStructure!=null){
-			CustomStructure globalStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES);
-			if(globalStructures!=null){
-				return globalStructures.getSubCustomStructure(activityType);
-			}else{
-				return null;
-			}			
-		}else{
-			return null;
+		if(buildInSpaceDefinitionsStructure==null){
+			this.addCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+			buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
 		}
+		CustomStructure globalStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES);
+		if(globalStructures==null){
+			buildInSpaceDefinitionsStructure.addSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES);
+			globalStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_GLOBAL_CUSTOMSTRUCTURES);			
+		}
+		CustomStructure targetGlobalStructure=globalStructures.getSubCustomStructure(activityType);
+		if(targetGlobalStructure==null){
+			globalStructures.addSubCustomStructure(activityType);
+			targetGlobalStructure=globalStructures.getSubCustomStructure(activityType);
+			
+		}
+		return targetGlobalStructure;		
 	}
+
+	@Override
+	public CustomStructure getBusinessActivityDefinitionStepCustomStructure(String activityType,String activityStepName) throws ActivityEngineRuntimeException, ActivityEngineDataException {
+		CustomStructure buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+		if(buildInSpaceDefinitionsStructure==null){
+			this.addCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+			buildInSpaceDefinitionsStructure=this.getCustomStructure(BUILDIN_ACTIVITYSPACE_ACTIVITYDEFINITIONS_ROOT_CUSTOMSTRUCTURE);
+		}
+		CustomStructure stepsStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_STEPS_CUSTOMSTRUCTURES);
+		if(stepsStructures==null){
+			buildInSpaceDefinitionsStructure.addSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_STEPS_CUSTOMSTRUCTURES);
+			stepsStructures=buildInSpaceDefinitionsStructure.getSubCustomStructure(BUILDIN_ACTIVITYDEFINITIONS_STEPS_CUSTOMSTRUCTURES);			
+		}
+		CustomStructure activityTypeStructure=stepsStructures.getSubCustomStructure(activityType);
+		if(activityTypeStructure==null){
+			stepsStructures.addSubCustomStructure(activityType);
+			activityTypeStructure=stepsStructures.getSubCustomStructure(activityType);
+		}
+		CustomStructure targetStepStructure=activityTypeStructure.getSubCustomStructure(activityStepName);
+		if(targetStepStructure==null){
+			activityTypeStructure.addSubCustomStructure(activityStepName);
+			targetStepStructure=activityTypeStructure.getSubCustomStructure(activityStepName);
+		}	
+		return targetStepStructure;
+	}	
 }

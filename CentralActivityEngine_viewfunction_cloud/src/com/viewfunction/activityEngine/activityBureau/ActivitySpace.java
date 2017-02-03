@@ -120,5 +120,6 @@ public interface ActivitySpace {
 	
 	public Map<String,String> getBusinessActivityDefinitionStepProcessEditorsInfo(String activityType) throws ActivityEngineRuntimeException, ActivityEngineDataException;
 	public boolean setBusinessActivityDefinitionStepProcessEditorInfo(String activityType,Map<String,String> stepProcessEditorsInfo) throws ActivityEngineRuntimeException, ActivityEngineDataException;	
+	public CustomStructure getBusinessActivityDefinitionStepCustomStructure(String activityType,String activityStepName) throws ActivityEngineRuntimeException, ActivityEngineDataException;
 	public CustomStructure getBusinessActivityDefinitionGlobalCustomStructure(String activityType) throws ActivityEngineRuntimeException, ActivityEngineDataException;	
 }
