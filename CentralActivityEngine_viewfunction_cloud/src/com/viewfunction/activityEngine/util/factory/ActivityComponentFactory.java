@@ -203,7 +203,7 @@ public class ActivityComponentFactory {
 			BUILDIN_ADMINISTRATOR_ACCOUNT = PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT);
 			BUILDIN_ADMINISTRATOR_ACCOUNT_PWD=PerportyHandler.getPerportyValue(PerportyHandler.BUILDIN_ADMINISTRATOR_ACCOUNT_PWD);
 			
-			//Wait 2 second to let OAK sesssion sync data
+			//Wait 2 second to let OAK session sync data
 			try {
 				Thread.sleep(2000);
 			} catch (InterruptedException e) {
