@@ -1373,6 +1373,9 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 activityDefineMetaConfigVerProperty.setMultiple(false);
                 activityDefineMetaConfigVerProperty.setPropertyName(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
                 activityDefineMetaConfigVerProperty.setPropertyType(PropertyType.LONG);
+                if(newMetaConfigVersion==0){
+                	newMetaConfigVersion=1;
+                }
                 activityDefineMetaConfigVerProperty.setPropertyValue(new Long(newMetaConfigVersion));
                 defineParamLst.add(activityDefineMetaConfigVerProperty);
 
@@ -1947,9 +1950,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 BusinessActivityDefinition bsd=ActivityComponentFactory.createBusinessActivityDefinition(targetActivityDefineObj.getContentObjectName(), this.activitySpaceName,null);
                 bsd.setActivityDataFields(dfdArray);
 
-                long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
-                ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
-
+                if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion)!=null){
+                	long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
+                    ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
+                }else{
+                	 ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(1);
+                }
                 boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
                 ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
                 ContentObjectProperty rosterPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_belongsToRoster);
@@ -2196,9 +2202,13 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                     BusinessActivityDefinition bsd=ActivityComponentFactory.createBusinessActivityDefinition(targetActivityDefineObj.getContentObjectName(), this.activitySpaceName,null);
                     bsd.setActivityDataFields(dfdArray);
 
-                    long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
-                    ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
-
+                    if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion)!=null){
+                    	 long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
+                         ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
+                    }else{
+                    	((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(1);
+                    }
+                    
                     boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
                     ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
                     ContentObjectProperty rosterPro=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_belongsToRoster);
@@ -3453,12 +3463,15 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 throw new ActivityEngineActivityException();
             }
             else{
-                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);                
+                if(activityDefineMetaConfigVerProperty!=null){
+                	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();                	
+                	Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                    activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                    targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false); 
+                }else{                	            	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                }
                 BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
                 if(dataFieldObj==null){
                     dataFieldObj=targetActivityDefineObj.addSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields, null, false);
@@ -3561,12 +3574,15 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 throw new ActivityEngineActivityException();
             }
             else{
-                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);               
+                if(activityDefineMetaConfigVerProperty!=null){
+                	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                	Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                    activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                    targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);                    
+                }else{                	             	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                } 
                 BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
                 if(dataFieldObj==null){
                     throw new ActivityEngineActivityException();
@@ -3671,11 +3687,14 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             }
             else{
                 ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-
+               if(activityDefineMetaConfigVerProperty!=null){
+                	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                	  Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                      activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                      targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                }else{                	             	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                }
                 BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
                 if(dataFieldObj==null){
                     throw new ActivityEngineActivityException();
@@ -3720,11 +3739,15 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(targetActivityDefineObj==null){
                 throw new ActivityEngineActivityException();
             }else{
-                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);               
+                if(activityDefineMetaConfigVerProperty!=null){
+                	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                    Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                    activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                    targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                }else{                	             	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                }         
 
                 BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
                 if(stepsObj==null){
@@ -3790,11 +3813,15 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(targetActivityDefineObj==null){
                 throw new ActivityEngineActivityException();
             }else{
-                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);               
+                if(activityDefineMetaConfigVerProperty!=null){
+                	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                	Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                    activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                    targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                }else{                	             	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                }                                
 
                 BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
                 if(stepsObj==null){
@@ -3857,12 +3884,16 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(targetActivityDefineObj==null){
                 throw new ActivityEngineActivityException();
             }else{
-                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
-
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);               
+                if(activityDefineMetaConfigVerProperty!=null){
+                	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                	Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                    activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                    targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                }else{                	             	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                }                     
+                
                 ContentObjectProperty exposedStepsProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_exposedSteps);
                 if(exposedStepsProperty==null){
                     throw new ActivityEngineActivityException();
@@ -3990,11 +4021,15 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(targetActivityDefineObj==null){
                 throw new ActivityEngineActivityException();
             }else{
-                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);              
+                if(activityDefineMetaConfigVerProperty!=null){
+                	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                	Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                    activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                    targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                }else{                	             	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                }                
 
                 BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
                 if(stepsObj==null){
@@ -4082,11 +4117,15 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(targetActivityDefineObj==null){
                 throw new ActivityEngineActivityException();
             }else{
-                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-                long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-                Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-                targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                ContentObjectProperty activityDefineMetaConfigVerProperty=targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);               
+                if(activityDefineMetaConfigVerProperty!=null){
+                	 long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+                	 Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                     activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                     targetActivityDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+                }else{                	             	
+                    targetActivityDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+                }
 
                 BaseContentObject stepsObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_steps);
                 if(stepsObj==null){
@@ -4176,11 +4215,15 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 newRoster.addActivityType(bd.getActivityType());
             }
 
-            ContentObjectProperty activityDefineMetaConfigVerProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);
-            long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
-            Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
-            activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
-            activityTypeDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+            ContentObjectProperty activityDefineMetaConfigVerProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion);           
+            if(activityDefineMetaConfigVerProperty!=null){
+            	long currentMetaConfigVersion=(Long)activityDefineMetaConfigVerProperty.getPropertyValue();
+            	Long newMetaConfigVersion=new Long(currentMetaConfigVersion+1);
+                activityDefineMetaConfigVerProperty.setPropertyValue(newMetaConfigVersion);
+                activityTypeDefineObj.updateProperty(activityDefineMetaConfigVerProperty,false);
+            }else{                	             	
+            	activityTypeDefineObj.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion, new Long(1), false);                	
+            }                        
 
             boolean isActive=bd.isEnabled();
             ContentObjectProperty activityDefineStatusProperty=activityTypeDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled);
