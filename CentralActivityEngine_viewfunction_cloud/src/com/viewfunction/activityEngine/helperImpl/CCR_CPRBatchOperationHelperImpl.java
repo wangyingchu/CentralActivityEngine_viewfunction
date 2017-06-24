@@ -40,7 +40,7 @@ public class CCR_CPRBatchOperationHelperImpl implements BatchOperationHelper{
 			try {
 				activityContentSpace=ContentComponentFactory.connectContentSpace(BUILDIN_ADMINISTRATOR_ACCOUNT, BUILDIN_ADMINISTRATOR_ACCOUNT_PWD,activitySpaceName);
 				for(ActivityStep currentActivityStep:activityStepsList){
-					BusinessActivityDefinition targetActivityDefinition=businessActivityDefinitionMap.get(currentActivityStep.getActivityType());
+					BusinessActivityDefinition targetActivityDefinition=businessActivityDefinitionMap.get(currentActivityStep.getActivityId());
 					if(targetActivityDefinition!=null){
 						String activityType=currentActivityStep.getActivityType();
 						String activityId=currentActivityStep.getActivityId();

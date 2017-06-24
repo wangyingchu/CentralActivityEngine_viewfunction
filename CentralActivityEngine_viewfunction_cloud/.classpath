@@ -97,5 +97,6 @@
 	<classpathentry kind="lib" path="crlib/oak-upgrade-1.4.11.jar"/>
 	<classpathentry kind="lib" path="crlib/tika-core-1.9.jar"/>
 	<classpathentry kind="lib" path="crlib/tika-parsers-1.9.jar"/>
+	<classpathentry kind="lib" path="lib/ehcache-2.7.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

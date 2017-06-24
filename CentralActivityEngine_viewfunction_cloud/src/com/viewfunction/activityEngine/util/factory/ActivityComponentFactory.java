@@ -41,6 +41,7 @@ import com.viewfunction.activityEngine.helperImpl.CCR_CPRBatchOperationHelperImp
 import com.viewfunction.activityEngine.security.Participant;
 import com.viewfunction.activityEngine.security.Role;
 import com.viewfunction.activityEngine.securityImpl.CCR_CPRParticipantImpl;
+import com.viewfunction.activityEngine.util.cache.ActivityEngineCache;
 import com.viewfunction.activityEngine.securityImpl.CCRRoleImpl;
 import com.viewfunction.contentRepository.contentBureau.BaseContentObject;
 import com.viewfunction.contentRepository.contentBureau.ContentSpace;
@@ -52,6 +53,8 @@ import com.viewfunction.contentRepository.util.exception.ContentReposityRuntimeE
 import com.viewfunction.contentRepository.util.factory.ContentComponentFactory;
 
 public class ActivityComponentFactory {
+	
+	private static ActivityEngineCache activityEngineCache;
 	
 	private static Map<String,Map<String,List<String>>> spaceActivityEventListenerRegister=new HashMap<String,Map<String,List<String>>>();
 	
@@ -251,6 +254,7 @@ public class ActivityComponentFactory {
 	
 	public static ActivitySpace getActivitySpace(String activitySpaceName){
 		CCRActivitySpaceImpl _CCRActivitySpaceImpl=new CCRActivitySpaceImpl(activitySpaceName);
+		_CCRActivitySpaceImpl.setActivityEngineCache(getActivityEngineCache());
 		registerSpaceActivityEventListeners(activitySpaceName);
 		return _CCRActivitySpaceImpl;
 	}
@@ -483,5 +487,13 @@ public class ActivityComponentFactory {
 	
 	public static BatchOperationHelper getBatchOperationHelper(){
 		return new CCR_CPRBatchOperationHelperImpl();
+	}
+
+	private static ActivityEngineCache getActivityEngineCache() {
+		return activityEngineCache;
+	}
+
+	public static void setActivityEngineCache(ActivityEngineCache activityEngineCacheInstance) {
+		activityEngineCache = activityEngineCacheInstance;
 	}
 }

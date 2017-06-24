@@ -37,6 +37,7 @@ import com.viewfunction.activityEngine.security.Participant;
 import com.viewfunction.activityEngine.security.Role;
 import com.viewfunction.activityEngine.securityImpl.CCRRoleImpl;
 import com.viewfunction.activityEngine.securityImpl.CCR_CPRParticipantImpl;
+import com.viewfunction.activityEngine.util.cache.ActivityEngineCache;
 import com.viewfunction.activityEngine.util.factory.ActivityComponentFactory;
 
 import com.viewfunction.contentRepository.contentBureau.BaseContentObject;
@@ -73,6 +74,8 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     private static final String BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES="BUILDIN_ACTIVITYDEFINITIONS_STEPEDITORS_CUSTOMSTRUCTURES";
 
     private String activitySpaceName;
+    
+    private ActivityEngineCache activityEngineCache;
 
     public CCRActivitySpaceImpl(String activitySpaceName){
         this.activitySpaceName=activitySpaceName;
@@ -1791,7 +1794,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                     Roster newRelatedRoster=this.getRoster(newRosterName);
                     newRelatedRoster.addActivityType(activityType);
                 }
+            }   
+            
+            if(this.getActivityEngineCache()!=null){ 
+            	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(bd.getActivitySpaceName(), bd.getActivityType());
             }
+            
             return true;
         } catch (ContentReposityException e) {
             e.printStackTrace();
@@ -1832,6 +1840,10 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             activityDefineStatusProperty.setPropertyType(PropertyType.BOOLEAN);
             activityDefineStatusProperty.setPropertyValue(false);
             targetActivityDefineObj.updateProperty(activityDefineStatusProperty, false);
+            
+            if(this.getActivityEngineCache()!=null){ 
+            	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName, activityType);
+            }
             return true;
         } catch (ContentReposityException e) {
             e.printStackTrace();
@@ -1872,6 +1884,10 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             activityDefineStatusProperty.setPropertyType(PropertyType.BOOLEAN);
             activityDefineStatusProperty.setPropertyValue(true);
             targetActivityDefineObj.updateProperty(activityDefineStatusProperty, false);
+            
+            if(this.getActivityEngineCache()!=null){ 
+            	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName, activityType);
+            }
             return true;
         } catch (ContentReposityException e) {
             e.printStackTrace();
@@ -1888,7 +1904,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
         if(activityTypes!=null){
             batda=new BusinessActivityDefinition[activityTypes.length];
             for(int i=0;i<activityTypes.length;i++){
-                BusinessActivityDefinition currentBad=getBusinessActivityDefinition(activityTypes[i]);
+                BusinessActivityDefinition currentBad=getBusinessActivityDefinitionDirectly(activityTypes[i]);
                 batda[i]=currentBad;
             }
         }else{
@@ -1898,7 +1914,23 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     }
 
     @Override
-    public BusinessActivityDefinition getBusinessActivityDefinition(String activityType) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
+    public BusinessActivityDefinition getBusinessActivityDefinition(String activityType) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {    	
+    	if(this.getActivityEngineCache()!=null){    		
+    		BusinessActivityDefinition definitionInCache=this.getActivityEngineCache().getBusinessDefinitionLatestInfo(this.activitySpaceName, activityType);
+    		if(definitionInCache!=null){
+    			return definitionInCache;
+    		}    		
+    	}    	
+    	BusinessActivityDefinition bsd=getBusinessActivityDefinitionDirectly(activityType);  
+        
+        if(this.getActivityEngineCache()!=null){ 
+        	this.getActivityEngineCache().addBusinessDefinitionLatestInfo(bsd);                	
+        }
+        return bsd;
+    }
+    
+    
+    private BusinessActivityDefinition getBusinessActivityDefinitionDirectly(String activityType) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {    	
         try {
             initContentRepositoryParameter();
         } catch (ContentReposityRuntimeException e) {
@@ -2141,7 +2173,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                         }
                         bsd.setLaunchPointExposedDataFields(launchPointDfdArray);
                     }
-                }
+                } 
                 return bsd;
             }
         } catch (ContentReposityException e) {
@@ -2153,7 +2185,16 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
     }
 
     public BusinessActivityDefinition getActivityInstanceActivityDefinitionSnapshoot(String activityType,String activityId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException{
-        try {
+    	if(this.getActivityEngineCache()!=null){         	                	
+    		long activityInstanceMetaConfigVersion=this.getActivityEngineCache().getMetaConfigVersionInCacheByActivityId(this.activitySpaceName, activityId);
+    		if(activityInstanceMetaConfigVersion!=0){    			
+    			BusinessActivityDefinition businessActivityDefinitionInCache=this.getActivityEngineCache().getBusinessDefinitionSnapshootInfo(this.activitySpaceName, activityType, activityInstanceMetaConfigVersion);
+    			if(businessActivityDefinitionInCache!=null){
+    				return businessActivityDefinitionInCache;
+    			}     			
+    		} 
+    	}    	
+    	try {
             initContentRepositoryParameter();
         } catch (ContentReposityRuntimeException e) {
             e.printStackTrace();
@@ -2174,7 +2215,20 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
             if(activityInstanceDefinitionSnapshootObj!=null){
                 BaseContentObject activityInstanceDefinitionObj=activityInstanceDefinitionSnapshootObj.getSubContentObject(activityType);
                 if(activityInstanceDefinitionObj!=null){
-                    BaseContentObject targetActivityDefineObj=activityInstanceDefinitionObj;
+                	BaseContentObject targetActivityDefineObj=activityInstanceDefinitionObj;
+                	 
+                	long currentActivityInstanceMetaConfigVersion=1;                    
+                    if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion)!=null){
+                    	currentActivityInstanceMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
+                    }                     
+                    if(this.getActivityEngineCache()!=null){ 
+                    	this.getActivityEngineCache().addActivityIdAndMetaConfigVersionMapping(this.activitySpaceName, activityId, currentActivityInstanceMetaConfigVersion);                    	
+                    	BusinessActivityDefinition cachedBusinessActivityDefinitionSnapshoot=this.getActivityEngineCache().getBusinessDefinitionSnapshootInfo(this.activitySpaceName, activityType, currentActivityInstanceMetaConfigVersion);           	
+                    	if(cachedBusinessActivityDefinitionSnapshoot!=null){
+                    		return cachedBusinessActivityDefinitionSnapshoot;                    		
+                    	}                    	                   
+                    }                	
+                   
                     BaseContentObject dataFieldObj=targetActivityDefineObj.getSubContentObject(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_dataFields);
                     long dataFieldDefineNum=dataFieldObj.getSubContentObjectsCount();
                     List<BaseContentObject> dataFieldDefineObjList=dataFieldObj.getSubContentObjects(null);
@@ -2199,15 +2253,10 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                         dfd.setWriteableField(activityDefineIsWriteableField);
                         dfdArray[i]=dfd;
                     }
+                    
                     BusinessActivityDefinition bsd=ActivityComponentFactory.createBusinessActivityDefinition(targetActivityDefineObj.getContentObjectName(), this.activitySpaceName,null);
                     bsd.setActivityDataFields(dfdArray);
-
-                    if(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion)!=null){
-                    	 long currentMetaConfigVersion=((Long)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_metaConfigurationVersion).getPropertyValue())).longValue();
-                         ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentMetaConfigVersion);
-                    }else{
-                    	((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(1);
-                    }
+                    ((CCRBusinessActivityDefinitionImpl)bsd).setMetaConfigurationVersion(currentActivityInstanceMetaConfigVersion);
                     
                     boolean isEnabled=((Boolean)(targetActivityDefineObj.getProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_isEnabled).getPropertyValue())).booleanValue();
                     ((CCRBusinessActivityDefinitionImpl)bsd).setIsEnabled(isEnabled);
@@ -2397,7 +2446,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                             }
                             bsd.setLaunchPointExposedDataFields(launchPointDfdArray);
                         }
-                    }
+                    }                    
+                    
+                    if(this.getActivityEngineCache()!=null){                    	
+                    	this.getActivityEngineCache().addBusinessDefinitionSnapshootInfo(bsd);                    	
+                    }                    
                     return bsd;
                 }
             }
@@ -2412,7 +2465,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 
     @Override
     public BusinessActivity launchBusinessActivity(String activityType,	ActivityData[] initActivityData,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
-        BusinessActivityDefinition currentActivityDefin=getBusinessActivityDefinition(activityType);
+        BusinessActivityDefinition currentActivityDefin=getBusinessActivityDefinitionDirectly(activityType);
         DataFieldDefinition[] activityDataFieldArray=currentActivityDefin.getActivityDataFields();
         if(!verifyActivityData(initActivityData,activityDataFieldArray)){
             throw new ActivityEngineDataException();
@@ -2473,7 +2526,7 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 
     @Override
     public BusinessActivity launchBusinessActivity(String activityType,	ActivityData[] initActivityData,Map<String,Object> processVariables,String startUserId) throws ActivityEngineRuntimeException, ActivityEngineActivityException, ActivityEngineDataException {
-        BusinessActivityDefinition currentActivityDefin=getBusinessActivityDefinition(activityType);
+        BusinessActivityDefinition currentActivityDefin=getBusinessActivityDefinitionDirectly(activityType);
         DataFieldDefinition[] activityDataFieldArray=currentActivityDefin.getActivityDataFields();
         if(!verifyActivityData(initActivityData,activityDataFieldArray)){
             throw new ActivityEngineDataException();
@@ -3538,6 +3591,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 
                     dataFieldObj.addSubContentObject(dataField.getFieldName(), paramLst, false);
                 }
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
                 return true;
             }
         } catch (ContentReposityException e) {
@@ -3650,7 +3708,12 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 
                     dataFieldObj.addSubContentObject(dataField.getFieldName(), paramLst, false);
                 }
-                return true;
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
+                return true;                
             }
         } catch (ContentReposityException e) {
             e.printStackTrace();
@@ -3704,6 +3767,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 }else{
                     dataFieldObj.removeSubContentObject(dataFieldName, false);
                 }
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
                 return true;
             }
         } catch (ContentReposityException e) {
@@ -3778,6 +3846,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                 if(relatedRoleName!=null){
                     currentStepdfd.addProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepRole, relatedRoleName, false);
                 }
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
                 return true;
             }
         } catch (ContentReposityException e) {
@@ -3849,6 +3922,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                     exposedStepsProperty.setPropertyValue(newExposedStepsArray);
                     targetActivityDefineObj.updateProperty(exposedStepsProperty, false);
                 }
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
                 return true;
             }
         } catch (ContentReposityException e) {
@@ -3985,6 +4063,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                         }
                     }
                 }
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
                 return true;
             }
         } catch (ContentReposityException e) {
@@ -4081,6 +4164,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                         stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepProcessVariableList, false);
                     }
                 }
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
                 return true;
             }
         } catch (ContentReposityException e) {
@@ -4165,6 +4253,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                         stepDefinObj.removeProperty(CCRActivityEngineConstant.ACTIVITYSPACE_ActivityDefinition_stepDecisionPointChoiseList, false);
                     }
                 }
+                
+                if(this.getActivityEngineCache()!=null){ 
+                	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(this.activitySpaceName,activityType);
+                }
+                
                 return true;
             }
         } catch (ContentReposityException e) {
@@ -4423,6 +4516,11 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
                     launchPointExposedDataFieldsObj.addSubContentObject(df.getFieldName(), paramLst, false);
                 }
             }
+            
+            if(this.getActivityEngineCache()!=null){ 
+            	this.getActivityEngineCache().removeBusinessDefinitionLatestInfo(bd.getActivitySpaceName(),bd.getActivityType());
+            }
+            
             return true;
         } catch (ContentReposityException e) {
             e.printStackTrace();
@@ -5064,5 +5162,13 @@ public class CCRActivitySpaceImpl implements ActivitySpace,Serializable{
 			targetStepStructure=activityTypeStructure.getSubCustomStructure(activityStepName);
 		}	
 		return targetStepStructure;
+	}
+
+	private ActivityEngineCache getActivityEngineCache() {
+		return activityEngineCache;
+	}
+
+	public void setActivityEngineCache(ActivityEngineCache activityEngineCache) {
+		this.activityEngineCache = activityEngineCache;
 	}	
 }

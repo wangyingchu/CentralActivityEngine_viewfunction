@@ -286,7 +286,8 @@ public class CCRBusinessActivityDefinitionImpl implements BusinessActivityDefini
 	@Override
 	public Role getActivityStepRelatedRole(String stepDefineKey) throws ActivityEngineProcessException, ActivityEngineRuntimeException {
 		if(!containsExposedActivityStep(stepDefineKey)){
-			throw new ActivityEngineProcessException();
+			//throw new ActivityEngineProcessException();
+			return null;
 		}else{
 			String roleName=containedStepRoleMap.get(stepDefineKey);
 			if(roleName==null){
